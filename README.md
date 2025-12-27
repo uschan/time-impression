@@ -1,56 +1,43 @@
 # Time Impression - Visual Experiments
 
-这是一个基于 React 和 Canvas 的高性能视觉交互实验合集。包含液态玻璃、动力学排版、引力模拟等多种效果。
+这是一个基于 React 和 Canvas 的高性能视觉交互实验合集。
 
-## 📦 项目准备
+## 📦 核心：如何修复 Loading 卡死问题
 
-在部署之前，请确保本地已安装 Node.js (v18+)。
+您遇到的 `application/octet-stream` 错误通常意味着两件事之一：
+1. **Nginx 配置缺失 MIME 类型**。
+2. **您上传了错误的 `index.html`** (源码而非构建产物)。
 
-1. **安装依赖**
-   ```bash
-   npm install
-   ```
-
-2. **本地开发**
-   ```bash
-   npm run dev
-   ```
+请严格按照以下步骤操作。
 
 ---
 
-## 🚀 部署指南 (VPS Nginx)
+### 第一步：正确构建 (Build)
 
-目标：将项目部署到 `https://wildsalt.me/time-impression/`。
+**不要**直接上传项目根目录下的文件。必须先编译。
 
-### 第一步：构建项目
+1. 在本地终端运行：
+   ```bash
+   npm run build
+   ```
+2. 这会生成一个 **`dist`** 文件夹。
+3. **检查 `dist/index.html` 的内容**：
+   - 打开它，搜索 `<script` 标签。
+   - ✅ 正确：`<script type="module" crossorigin src="./assets/index-xxxx.js"></script>`
+   - ❌ 错误：`<script type="module" src="./index.tsx"></script>` (如果你看到这个，说明你上传的是源码，浏览器无法运行)
 
-运行以下命令，Vite 会根据 `vite.config.ts` 中的 `base: './'` 配置生成相对路径的静态文件。
+### 第二步：上传 `dist` 文件夹
+
+将本地 `dist` 文件夹里的**所有内容**，上传到服务器的 `/var/www/wildsalt.me/time-impression/` 目录。
 
 ```bash
-npm run build
-```
-
-构建完成后，你会得到一个 `dist` 文件夹。
-
-### 第二步：上传到 VPS
-
-假设你的 VPS 网站根目录在 `/var/www/wildsalt.me/`。
-我们需要将 `dist` 文件夹内的内容上传到 `/var/www/wildsalt.me/time-impression/`。
-
-**使用 SCP (命令行):**
-```bash
-# 在项目根目录下执行
-# 将 dist 重命名为 time-impression 并上传
+# 示例：上传 dist 内容到服务器
 scp -r dist/* root@<你的VPS_IP>:/var/www/wildsalt.me/time-impression/
 ```
 
-或者使用 **FileZilla** 等 FTP 工具手动上传。
+### 第三步：Nginx 强力配置 (修复 MIME 错误)
 
-### 第三步：配置 Nginx (核心修复)
-
-**出现 MIME type 错误是因为 Nginx 默认不知道 .js 文件是 application/javascript。** 请务必添加 `include /etc/nginx/mime.types;`。
-
-编辑你的 Nginx 配置 (通常在 `/etc/nginx/sites-available/wildsalt.me`):
+编辑 Nginx 配置文件 (`/etc/nginx/sites-available/wildsalt.me`)。我们将显式告诉 Nginx `.js` 文件是 Javascript。
 
 ```nginx
 server {
@@ -60,92 +47,57 @@ server {
     root /var/www/wildsalt.me; 
     index index.html;
 
-    # === 关键配置：确保 MIME 类型正确加载 ===
+    # =====================================================
+    # 核心修复 1: 显式定义 MIME 类型
+    # 防止 Nginx 把 js 文件当作二进制流 (octet-stream) 下载
+    # =====================================================
     include /etc/nginx/mime.types;
-    
-    # 如果上面的 include 不起作用，可以显式强制指定 JS 类型
     types {
         application/javascript js mjs;
         text/css css;
         text/html html htm;
+        image/svg+xml svg;
     }
 
-    # === 二级目录配置 ===
+    # =====================================================
+    # 核心修复 2: 二级目录配置
+    # =====================================================
     location /time-impression/ {
-        # alias 必须以 / 结尾，这很重要
+        # 必须使用 alias 并且以 / 结尾
         alias /var/www/wildsalt.me/time-impression/;
         
-        # 尝试寻找文件，如果找不到，回退到 index.html
+        # 尝试寻找文件
         try_files $uri $uri/ /time-impression/index.html;
     }
 
-    # ... 其他配置 ...
+    # 处理构建后的 assets 静态资源 (可选，增加保险)
+    location /time-impression/assets/ {
+        alias /var/www/wildsalt.me/time-impression/assets/;
+        types {
+            application/javascript js mjs;
+            text/css css;
+        }
+    }
 }
 ```
 
-**保存并重启 Nginx:**
-```bash
-sudo nginx -t  # 检查配置是否有语法错误
-sudo systemctl reload nginx
-```
+### 第四步：重启并清理缓存
 
-### 🔴 故障排查
-
-**Q: 打开页面卡在 "Loading..."，控制台报错 `Failed to load module script ... MIME type of "application/octet-stream"`**
-
-**A:** 这是 Nginx 配置问题。Nginx 把 `.js` 文件当成了二进制流下载，而不是脚本执行。
-1. 确保 Nginx 配置里有 `include /etc/nginx/mime.types;`。
-2. 检查 `/etc/nginx/mime.types` 文件是否存在，且里面包含 `application/javascript js;`。
-3. 如果还不行，请直接将上面的 `types { application/javascript js mjs; }` 代码块粘贴到 `server` 块中。
-4. **强制刷新浏览器** (Ctrl+F5) 清除缓存。
+1. 测试配置：
+   ```bash
+   sudo nginx -t
+   ```
+2. 重启 Nginx：
+   ```bash
+   sudo systemctl reload nginx
+   ```
+3. **重要：** 在浏览器中，按 **Ctrl + Shift + R** (或 Cmd + Shift + R) 强制刷新，清除之前的错误缓存。
 
 ---
 
-## 🤖 自动化部署 (GitHub Actions)
+## 本地开发
 
-如果你想推送到 GitHub 自动部署，请在项目根目录创建 `.github/workflows/deploy.yml`。
-
-**前置准备：**
-1. 在 GitHub 仓库 -> Settings -> Secrets and variables -> Actions 中添加：
-   - `HOST`: VPS IP 地址
-   - `USERNAME`: VPS 用户名 (如 root)
-   - `SSH_KEY`: 你的私钥内容 (cat ~/.ssh/id_rsa)
-
-**workflow 文件内容：**
-
-```yaml
-name: Deploy to VPS
-
-on:
-  push:
-    branches: [ main ]
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install & Build
-        run: |
-          npm ci
-          npm run build
-
-      - name: Deploy via SCP
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          # 将构建产物 dist 下的所有文件，发送到 VPS 的目标文件夹
-          source: "dist/*"
-          target: "/var/www/wildsalt.me/time-impression/"
-          strip_components: 1 # 去掉 dist 这一层级，直接放内容
+```bash
+npm install
+npm run dev
 ```
