@@ -21,14 +21,16 @@ import SignalEffect from './SignalEffect';
 import LensEffect from './LensEffect';
 import KineticEffect from './KineticEffect';
 import TemporalEffect from './TemporalEffect';
+import HarmonicEffect from './HarmonicEffect';
 
-type Page = 'pendulum' | 'tree' | 'syntax' | 'entropy' | 'gravity' | 'ripple' | 'spore' | 'chasm' | 'thread' | 'neon' | 'galaxy' | 'eclipse' | 'velocity' | 'bloom' | 'noir' | 'orb' | 'signal' | 'lens' | 'kinetic' | 'temporal';
+type Page = 'pendulum' | 'tree' | 'syntax' | 'entropy' | 'gravity' | 'ripple' | 'spore' | 'chasm' | 'thread' | 'neon' | 'galaxy' | 'eclipse' | 'velocity' | 'bloom' | 'noir' | 'orb' | 'signal' | 'lens' | 'kinetic' | 'temporal' | 'harmonic';
 
 const PAGES: { id: Page; label: string; desc: string; type?: '2d' | '3d' }[] = [
-  { id: 'temporal', label: 'TEMPORAL', desc: 'Sands of time', type: '3d' }, // Reverted to 3D
+  { id: 'temporal', label: 'TEMPORAL', desc: 'Sands of time', type: '3d' },
+  { id: 'harmonic', label: 'HARMONIC', desc: 'Resonance flow', type: '3d' },
+  { id: 'orb', label: 'ORB', desc: 'Periodic elements' }, // Removed type: 3d, it is a 2D canvas simulation
   { id: 'lens', label: 'LENS', desc: 'Liquid glass' },
   { id: 'kinetic', label: 'KINETIC', desc: 'Typography wave' },
-  { id: 'orb', label: 'ORB', desc: 'Periodic elements', type: '3d' }, 
   { id: 'signal', label: 'SIGNAL', desc: 'Digital interference' },
   { id: 'bloom', label: 'BLOOM', desc: 'Floral growth' },
   { id: 'noir', label: 'NOIR', desc: 'Smoky cinema' },
@@ -52,7 +54,7 @@ const App: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Dark mode detection based on current page
-  const isDarkMode = ['neon', 'galaxy', 'chasm', 'eclipse', 'velocity', 'noir', 'orb', 'signal', 'kinetic', 'temporal'].includes(currentPage);
+  const isDarkMode = ['neon', 'galaxy', 'chasm', 'eclipse', 'velocity', 'noir', 'orb', 'signal', 'kinetic', 'temporal', 'harmonic'].includes(currentPage);
 
   const handlePageChange = (page: Page) => {
     setCurrentPage(page);
@@ -64,11 +66,12 @@ const App: React.FC = () => {
   return (
     <div className={`relative w-full h-screen overflow-hidden transition-colors duration-1000 ${
       currentPage === 'temporal' ? 'bg-[#000]' :
+      (currentPage === 'harmonic' ? 'bg-[#0a0510]' :
       (currentPage === 'neon' || currentPage === 'velocity' || currentPage === 'signal' ? 'bg-[#05050a]' : 
       (currentPage === 'galaxy' || currentPage === 'eclipse' || currentPage === 'noir' || currentPage === 'orb' || currentPage === 'kinetic' ? 'bg-[#080808]' : 
       (currentPage === 'chasm' ? 'bg-[#111]' : 
       (currentPage === 'bloom' || currentPage === 'lens' ? 'bg-[#f8f8f8]' : 
-      'bg-[#f5f5f5]'))))
+      'bg-[#f5f5f5]')))))
     }`}>
       
       {/* Menu Toggle Button */}
@@ -140,17 +143,18 @@ const App: React.FC = () => {
         {is3D ? (
           <Canvas
             camera={{ position: [0, 0, 30], fov: 35 }}
-            dpr={[1, 2]} // Optimize pixel ratio
+            dpr={[1, 2]}
             gl={{ antialias: true, alpha: true }}
             className="w-full h-full"
           >
             <Suspense fallback={null}>
                {currentPage === 'temporal' && <TemporalEffect />}
-               {currentPage === 'orb' && <OrbEffect />}
+               {currentPage === 'harmonic' && <HarmonicEffect />}
             </Suspense>
           </Canvas>
         ) : (
           <>
+            {currentPage === 'orb' && <OrbEffect />}
             {currentPage === 'pendulum' && <PendulumEffect />}
             {currentPage === 'tree' && <ChristmasTreeEffect />}
             {currentPage === 'syntax' && <SyntaxFreedomEffect />}
