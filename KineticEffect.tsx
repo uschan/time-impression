@@ -28,8 +28,9 @@ const KineticEffect: React.FC = () => {
       const cells: KineticCell[] = [];
       const words = KINETIC_TEXT.split(' ');
       
-      const COLUMNS = 6;
-      const ROWS = 8;
+      // Much higher density
+      const COLUMNS = Math.floor(canvas.width / 40);
+      const ROWS = Math.floor(canvas.height / 25);
       
       const cellW = canvas.width / COLUMNS;
       const cellH = canvas.height / ROWS;
@@ -39,7 +40,7 @@ const KineticEffect: React.FC = () => {
               const cx = x * cellW + cellW/2;
               const cy = y * cellH + cellH/2;
               
-              // Pick random word
+              // Pattern generation: alternating words or solid blocks
               const word = words[(x + y * COLUMNS) % words.length];
               
               cells.push({
@@ -52,7 +53,7 @@ const KineticEffect: React.FC = () => {
                   height: cellH,
                   stretchX: 1,
                   stretchY: 1,
-                  weight: 400 // Font weight
+                  weight: 400 
               });
           }
       }
@@ -60,8 +61,8 @@ const KineticEffect: React.FC = () => {
     };
 
     const animate = () => {
-      // Brutalist background
-      ctx.fillStyle = '#f2f2f2'; 
+      // High contrast aesthetic
+      ctx.fillStyle = '#111'; 
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const mx = mouseRef.current.x;
@@ -71,75 +72,65 @@ const KineticEffect: React.FC = () => {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       
-      // Draw Grid Lines (Subtle)
-      ctx.strokeStyle = '#e0e0e0';
-      ctx.lineWidth = 1;
-      const cellW = cells[0]?.width || 100;
-      const cellH = cells[0]?.height || 100;
-      
-      // Render Cells
+      const time = Date.now() * 0.002;
+
       cells.forEach(cell => {
-          // Calculate distance to mouse
-          const dx = cell.originX - mx;
-          const dy = cell.originY - my;
+          const dx = mx - cell.originX;
+          const dy = my - cell.originY;
           const distSq = dx*dx + dy*dy;
-          const radius = 350; // Influence radius
+          const dist = Math.sqrt(distSq);
           
-          let targetStretchX = 1;
-          let targetStretchY = 1;
-          let targetWeight = 400;
+          const maxDist = 300;
           
-          if (distSq < radius * radius) {
-              const dist = Math.sqrt(distSq);
-              const t = 1 - dist / radius;
-              // Ease t
-              const ease = t * t;
+          let displaceX = 0;
+          let displaceY = 0;
+          let scale = 1;
+          
+          // Wave / Ripples
+          // Global wave
+          const wave = Math.sin(cell.originX * 0.01 + cell.originY * 0.01 + time) * 5;
+          
+          if (dist < maxDist) {
+              const effect = (1 - dist / maxDist);
+              const power = effect * effect * effect; // Sharper falloff
               
-              // Calculate direction of stretch
-              // If mouse is mostly horizontal relative to cell, stretch width
+              // Push away logic (Displacement Map style)
               const angle = Math.atan2(dy, dx);
-              const absCos = Math.abs(Math.cos(angle));
-              const absSin = Math.abs(Math.sin(angle));
               
-              // STRETCH LOGIC:
-              // Push text away creates compression? Or pull creates stretch?
-              // Let's make it expand in width/height based on proximity
+              // Push text away from mouse to create a "lens" or "bubble"
+              const push = 60 * power;
+              displaceX = -Math.cos(angle) * push;
+              displaceY = -Math.sin(angle) * push;
               
-              targetStretchX = 1 + ease * 2.0 * absCos; // Stretch wide
-              targetStretchY = 1 + ease * 1.5 * absSin; // Stretch tall
-              targetWeight = 400 + ease * 500; // Boldness increases
+              // Magnify
+              scale = 1 + power * 2.5; 
           }
           
-          // Smooth Interpolation (Elastic feel)
-          cell.stretchX += (targetStretchX - cell.stretchX) * 0.1;
-          cell.stretchY += (targetStretchY - cell.stretchY) * 0.1;
-          cell.weight += (targetWeight - cell.weight) * 0.1;
+          // Apply physics smoothing
+          cell.x += (cell.originX + displaceX - cell.x) * 0.1;
+          cell.y += (cell.originY + displaceY + wave - cell.y) * 0.1;
+          cell.stretchX += (scale - cell.stretchX) * 0.1;
+
+          // Render
+          const fontSize = Math.min(cell.width, cell.height) * 0.7 * cell.stretchX;
           
-          // Draw
-          ctx.save();
-          ctx.translate(cell.originX, cell.originY);
+          if (fontSize < 2) return; // Optimization
+
+          ctx.font = `bold ${fontSize}px "Arial", sans-serif`;
           
-          // Apply variable transform
-          ctx.scale(cell.stretchX, cell.stretchY);
-          
-          // Variable Font Simulation using standard font weights + scaling
-          // Since we can't easily animate font-weight property in Canvas smoothy without specific fonts loaded,
-          // We will simulate weight/impact by scaling and color.
-          
-          const fontSize = Math.min(cell.width, cell.height) * 0.25;
-          // Use Arial Black or Impact for maximum kinetic feel
-          ctx.font = `900 ${fontSize}px "Arial Black", "Impact", sans-serif`;
-          
-          ctx.fillStyle = '#111';
-          
-          // If stretched heavily, maybe change color to accent
-          if (cell.stretchX > 1.5 || cell.stretchY > 1.5) {
-               ctx.fillStyle = '#ff3300'; // Kinetic Orange
+          // Dynamic Color
+          // White normally, but turning Cyan/Magenta on high distortion
+          if (cell.stretchX > 1.5) {
+             const t = (cell.stretchX - 1.5) / 2;
+             ctx.fillStyle = `rgb(${255 * (1-t)}, 255, ${255 * (1-t) + 100})`;
+          } else {
+             ctx.fillStyle = '#444';
+             if (Math.abs(mx - cell.x) < 50 && Math.abs(my - cell.y) < 50) {
+                 ctx.fillStyle = '#fff';
+             }
           }
           
-          ctx.fillText(cell.char, 0, 0);
-          
-          ctx.restore();
+          ctx.fillText(cell.char, cell.x, cell.y);
       });
 
       requestRef.current = requestAnimationFrame(animate);
@@ -167,18 +158,18 @@ const KineticEffect: React.FC = () => {
   }, [key]);
 
   return (
-    <div className="relative w-full h-full cursor-none bg-[#f2f2f2]">
+    <div className="relative w-full h-full cursor-none bg-[#111]">
       <canvas ref={canvasRef} className="block w-full h-full" />
       <button 
         onClick={handleRestart}
-        className="absolute top-20 left-4 p-2 bg-black text-white rounded-full hover:bg-gray-800 transition-colors shadow-sm z-10"
+        className="absolute top-20 left-4 p-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors shadow-sm z-10"
       >
         <RotateCcw size={20} />
       </button>
       
        <div className="absolute bottom-10 left-0 w-full text-center pointer-events-none">
-        <h2 className="text-black font-sans font-black text-sm tracking-tighter uppercase opacity-80">
-            KINETIC / VARIABLE
+        <h2 className="text-white font-sans font-black text-sm tracking-tighter uppercase opacity-50">
+            KINETIC / DISPLACEMENT
         </h2>
       </div>
     </div>

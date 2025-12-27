@@ -21,20 +21,22 @@ Impression Blocked Out By Time.
 export const PENDULUM_TEXT = "Impression Blocked Out By Time";
 
 export const CHRISTMAS_TEXT = [
-  "Christmas Carol", "Born in Silence", "To the World", "Of Returning Light",
-  "Sol Invictus", "Light Returning", "Peace Has Come", "Jingle Bell", 
-  "Rock", "Swing", "Ring", "Snowin", "Blowin", "Bushels of Fun",
-  "Carries a Seed", "Peace", "Love", "Hope", "Joy", "Silence", 
-  "Returning", "Memory", "Time", "Dance", "Tree", "Star",
+  "Carol", "Silent", "World", "Light",
+  "Invictus", "Return", "Peace", "Jingle", 
+  "Rock", "Swing", "Ring", "Snow", "Blow", "Fun",
+  "Seed", "Peace", "Love", "Hope", "Joy", "Silence", 
+  "Memory", "Time", "Dance", "Tree", "Star",
   "Night", "Winter", "Solstice", "Glow", "Warmth"
 ];
 
 export const SYNTAX_TEXT = "The wind rises from the lines a partially opened box The fragments of melody come from a place we left long ago When it plays again years fold The world becomes light again light enough to be picked up once more Rising up not just notes but the years carried by the sound Freedom is sometimes simple a sentence flying up again";
 
+// Meaningful, varied concepts
 export const GRAVITY_WORDS = [
-  "Weight", "Burden", "Gravity", "Fall", "Heavy", "Mass", "Force", "Down",
-  "Stone", "Iron", "Anchor", "Drop", "Crash", "Solid", "Matter", "Core",
-  "Deep", "Sinking", "Pressure", "Density", "Lead", "Load", "Pull", "Earth"
+  "LOVE", "FATE", "TIME", "SOUL", "ECHO", "VOID", "HOPE", "BLUE",
+  "RAIN", "WIND", "K-404", "ERROR", "LIFE", "LUCK", "DOOM", "KISS",
+  "CITY", "BORN", "DIED", "GONE", "HERE", "MOON", "MARS", "ZERO",
+  "NULL", "DATA", "CASH", "GOLD", "IRON", "RUST", "DUST", "SAND"
 ];
 
 export const RIPPLE_TEXT = "The surface of the mind reflects the world like water. A single thought can create ripples that distort reality. Is what we see the truth, or merely a reflection trembling in the wind?";
@@ -85,7 +87,19 @@ export const NOIR_TEXT = `
   A breath held in the dark.
 `;
 
-export const ORB_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789•+";
+// Periodic Table Abbreviations
+export const ORB_CHARS = [
+  "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne",
+  "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca",
+  "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn",
+  "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr",
+  "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn",
+  "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd",
+  "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb",
+  "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg",
+  "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th",
+  "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm"
+];
 
 export const SIGNAL_TEXT = [
   "SYSTEM_FAILURE", "NO_SIGNAL", "CONNECTION_LOST", "RETRYING...", 

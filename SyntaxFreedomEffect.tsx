@@ -8,7 +8,6 @@ const SyntaxFreedomEffect: React.FC = () => {
   const [key, setKey] = useState(0); 
   const requestRef = useRef<number>(0);
   
-  // Previous mouse position to calculate velocity
   const mouseRef = useRef({ x: -1000, y: -1000, vx: 0, vy: 0 });
   
   const stateRef = useRef<{
@@ -27,11 +26,9 @@ const SyntaxFreedomEffect: React.FC = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // --- Config ---
-    const BLUE_RECT_COLOR = '#89CFF0'; 
-    const WIRE_COUNT = 5;
-    const WIRE_SPACING = 80;
-    const POINTS_PER_WIRE = 40; // Resolution of simulation
+    const WIRE_COUNT = 6;
+    const WIRE_SPACING = 70;
+    const POINTS_PER_WIRE = 40; 
     
     const init = () => {
       canvas.width = window.innerWidth;
@@ -40,23 +37,34 @@ const SyntaxFreedomEffect: React.FC = () => {
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
       
-      // Rect dimensions
       const rectWidth = Math.min(600, canvas.width * 0.85);
       const startY = centerY - (WIRE_COUNT * WIRE_SPACING) / 2 + 50;
-      const startX = centerX - rectWidth / 2 - 50; // Extend slightly beyond rect
+      const startX = centerX - rectWidth / 2 - 50; 
       const endX = centerX + rectWidth / 2 + 50;
       const wireWidth = endX - startX;
 
-      // 1. Create Wires (Wave Simulation)
       const wires: WaveWire[] = [];
       for (let i = 0; i < WIRE_COUNT; i++) {
         const points: WavePoint[] = [];
+        
+        // Organic curve bias for this wire
+        const curveBias = (Math.random() - 0.5) * 60;
+        const curveFreq = 2 + Math.random() * 2;
+
         for (let j = 0; j <= POINTS_PER_WIRE; j++) {
-           const x = startX + (j / POINTS_PER_WIRE) * wireWidth;
-           const y = startY + i * WIRE_SPACING;
+           const t = j / POINTS_PER_WIRE;
+           const x = startX + t * wireWidth;
+           
+           // Natural sagging / curve
+           const sag = Math.sin(t * Math.PI) * curveBias;
+           // Slight random noise
+           const noise = Math.sin(t * Math.PI * curveFreq) * 5;
+           
+           const y = startY + i * WIRE_SPACING + sag + noise;
+           
            points.push({
              x,
-             y,
+             y, // Resting Y varies now
              dy: 0,
              vel: 0,
              force: 0
@@ -65,16 +73,16 @@ const SyntaxFreedomEffect: React.FC = () => {
 
         wires.push({
           points,
-          y: startY + i * WIRE_SPACING,
-          tension: 0.1, // Elasticity
-          damping: 0.94, // How fast waves die out
+          y: startY + i * WIRE_SPACING, // Approx Y
+          tension: 0.05 + Math.random() * 0.05, // Varied tension
+          damping: 0.94, 
           color: '#333'
         });
       }
 
-      // 2. Create Particles
       const particles: NoteParticle[] = [];
       const words = SYNTAX_TEXT.split(' ');
+      const symbols = ['∑', '∫', '∞', '≠', '≈', '∇', '∂', '∅', '∏'];
       
       let wireIdx = 0;
       let t = 0.05; 
@@ -90,8 +98,14 @@ const SyntaxFreedomEffect: React.FC = () => {
         }
 
         for (let char of word) {
+           // 15% chance to replace with math symbol
+           let displayChar = char;
+           if (Math.random() < 0.15) {
+               displayChar = symbols[Math.floor(Math.random() * symbols.length)];
+           }
+
            particles.push({
-             char,
+             char: displayChar,
              wireIndex: wireIdx,
              t: t,
              x: 0, y: 0, vx: 0, vy: 0,
@@ -116,19 +130,15 @@ const SyntaxFreedomEffect: React.FC = () => {
       const rectX = centerX - rectWidth / 2;
       const rectY = centerY - rectHeight / 2;
 
-      // --- Background ---
       ctx.fillStyle = '#f5f5f5';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      // Shadow
       ctx.fillStyle = 'rgba(0,0,0,0.05)';
       ctx.fillRect(rectX + 20, rectY + 20, rectWidth, rectHeight);
 
-      // Poster
       ctx.fillStyle = '#89CFF0';
       ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
       
-      // Text Elements
       ctx.save();
       ctx.fillStyle = '#222';
       ctx.font = 'bold 36px "Courier New", monospace';
@@ -139,26 +149,30 @@ const SyntaxFreedomEffect: React.FC = () => {
       ctx.fillText("FREEDOM", rectX + 30, rectY + rectHeight - 20);
       ctx.restore();
 
-      // --- Physics: Wave Simulation ---
       const mouseX = mouseRef.current.x;
       const mouseY = mouseRef.current.y;
       const mouseVy = mouseRef.current.vy;
 
       wires.forEach(wire => {
-         // A. Propagation
+         // Propagation
          for (let i = 1; i < wire.points.length - 1; i++) {
             const p = wire.points[i];
             const prev = wire.points[i-1];
             const next = wire.points[i+1];
 
-            // 1D Wave equation force: k * (neighbors - 2*current)
+            // 1D Wave equation force
+            // NOTE: We calculate force relative to RESTING positions (p.y) + dy
+            const targetY = p.y; // Original rest
+            const currentY = p.y + p.dy;
+            
+            // Laplacian smoothing on displacement
             const force = wire.tension * (prev.dy + next.dy - 2 * p.dy);
             p.vel += force;
             p.vel *= wire.damping;
             p.dy += p.vel;
          }
 
-         // B. Mouse Interaction (Plucking)
+         // Mouse Interaction
          for (let i = 1; i < wire.points.length - 1; i++) {
            const p = wire.points[i];
            const dx = p.x - mouseX;
@@ -166,23 +180,18 @@ const SyntaxFreedomEffect: React.FC = () => {
            const dist = Math.sqrt(dx*dx + dy*dy);
            
            if (dist < 40) {
-             // Impart velocity based on mouse speed
-             // Push away from mouse vertically
              const pushForce = Math.abs(mouseVy) * 0.5 + 2; 
-             const direction = dy > 0 ? 1 : -1; // Push in direction of offset
+             const direction = dy > 0 ? 1 : -1;
              p.vel += direction * pushForce * 0.2;
-             
-             // Dampen interaction to avoid infinite energy
              p.dy += direction * 2;
            }
          }
          
-         // Fix endpoints
          wire.points[0].dy = 0;
          wire.points[wire.points.length-1].dy = 0;
       });
 
-      // --- Draw Wires ---
+      // Draw Wires
       ctx.beginPath();
       ctx.strokeStyle = '#333';
       ctx.lineWidth = 1.5;
@@ -192,17 +201,16 @@ const SyntaxFreedomEffect: React.FC = () => {
          ctx.moveTo(pts[0].x, pts[0].y + pts[0].dy);
          for (let i = 1; i < pts.length - 2; i++) {
            const xc = (pts[i].x + pts[i+1].x) / 2;
+           // Important: use stored Y + displacement DY
            const yc = (pts[i].y + pts[i].dy + pts[i+1].y + pts[i+1].dy) / 2;
            ctx.quadraticCurveTo(pts[i].x, pts[i].y + pts[i].dy, xc, yc);
          }
-         // Last segments
          const last = pts[pts.length-1];
          const secondLast = pts[pts.length-2];
          ctx.quadraticCurveTo(secondLast.x, secondLast.y + secondLast.dy, last.x, last.y + last.dy);
       });
       ctx.stroke();
 
-      // --- Particles Logic ---
       ctx.font = '16px "Courier New", monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -213,24 +221,20 @@ const SyntaxFreedomEffect: React.FC = () => {
         const pts = wire.points;
         const totalPts = pts.length - 1;
         
-        // Find exact position on wire spline
         const floatIdx = p.t * totalPts;
         const idx = Math.floor(floatIdx);
         const subT = floatIdx - idx;
         
-        // Interpolate for smooth position
         const p1 = pts[idx];
         const p2 = pts[Math.min(idx+1, totalPts)];
         
         const wireX = p1.x + (p2.x - p1.x) * subT;
         const wireY = (p1.y + p1.dy) * (1 - subT) + (p2.y + p2.dy) * subT;
         
-        // Calculate Slope for rotation
         const dx = p2.x - p1.x;
         const dy = (p2.y + p2.dy) - (p1.y + p1.dy);
         const wireAngle = Math.atan2(dy, dx);
         
-        // Calculate Velocity of the wire point (how fast is it vibrating?)
         const wireVel = p1.vel * (1 - subT) + p2.vel * subT;
 
         if (!p.floating) {
@@ -238,29 +242,24 @@ const SyntaxFreedomEffect: React.FC = () => {
           p.y = wireY;
           p.angle = wireAngle;
           
-          // Trigger Release: High velocity vibration
           if (Math.abs(wireVel) > 4.0) {
              p.floating = true;
              p.vx = (Math.random() - 0.5) * 5;
-             p.vy = wireVel * 1.5; // Launch with wire momentum
+             p.vy = wireVel * 1.5; 
              p.angle += (Math.random() - 0.5);
           }
         } else {
-          // Flock / Flight physics
           p.x += p.vx;
           p.y += p.vy;
-          p.vy += 0.15; // Gravity
-          p.vx *= 0.99; // Air drag
-          p.angle += p.vx * 0.05; // Rotate with horizontal motion
+          p.vy += 0.15;
+          p.vx *= 0.99;
+          p.angle += p.vx * 0.05;
           
-          // Return force (Magnetism)
           const dxHome = wireX - p.x;
           const dyHome = wireY - p.y;
-          
           p.vx += dxHome * 0.005;
           p.vy += dyHome * 0.005;
           
-          // Re-attach if close and slow
           const distSq = dxHome*dxHome + dyHome*dyHome;
           if (distSq < 100 && Math.abs(p.vy) < 2) {
             p.floating = false;
@@ -278,11 +277,8 @@ const SyntaxFreedomEffect: React.FC = () => {
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      // Calculate simple velocity of mouse
       const vx = e.clientX - mouseRef.current.x;
       const vy = e.clientY - mouseRef.current.y;
-      
-      // Update ref
       mouseRef.current = { x: e.clientX, y: e.clientY, vx, vy };
     };
 

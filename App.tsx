@@ -24,8 +24,8 @@ type Page = 'pendulum' | 'tree' | 'syntax' | 'entropy' | 'gravity' | 'ripple' | 
 
 const PAGES: { id: Page; label: string; desc: string }[] = [
   { id: 'lens', label: 'LENS', desc: 'Liquid glass' },
-  { id: 'kinetic', label: 'KINETIC', desc: 'Variable typography' },
-  { id: 'orb', label: 'ORB', desc: 'Global consciousness' },
+  { id: 'kinetic', label: 'KINETIC', desc: 'Typography wave' },
+  { id: 'orb', label: 'ORB', desc: 'Periodic elements' },
   { id: 'signal', label: 'SIGNAL', desc: 'Digital interference' },
   { id: 'bloom', label: 'BLOOM', desc: 'Floral growth' },
   { id: 'noir', label: 'NOIR', desc: 'Smoky cinema' },
@@ -33,7 +33,7 @@ const PAGES: { id: Page; label: string; desc: string }[] = [
   { id: 'tree', label: 'CHRISTMAS', desc: 'Festive structure' },
   { id: 'syntax', label: 'SYNTAX', desc: 'Freedom of lines' },
   { id: 'entropy', label: 'ENTROPY', desc: 'Order to chaos' },
-  { id: 'gravity', label: 'GRAVITY', desc: 'Weight of words' },
+  { id: 'gravity', label: 'GRAVITY', desc: 'Weight of concepts' },
   { id: 'ripple', label: 'RIPPLE', desc: 'Reflection in water' },
   { id: 'spore', label: 'SPORE', desc: 'Organic growth' },
   { id: 'chasm', label: 'CHASM', desc: 'Infinite abyss' },
@@ -49,7 +49,7 @@ const App: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Dark mode detection based on current page
-  const isDarkMode = ['neon', 'galaxy', 'chasm', 'eclipse', 'velocity', 'noir', 'orb', 'signal'].includes(currentPage);
+  const isDarkMode = ['neon', 'galaxy', 'chasm', 'eclipse', 'velocity', 'noir', 'orb', 'signal', 'kinetic'].includes(currentPage);
 
   const handlePageChange = (page: Page) => {
     setCurrentPage(page);
@@ -59,10 +59,10 @@ const App: React.FC = () => {
   return (
     <div className={`relative w-full h-screen overflow-hidden transition-colors duration-1000 ${
       currentPage === 'neon' || currentPage === 'velocity' || currentPage === 'signal' ? 'bg-[#05050a]' : 
-      (currentPage === 'galaxy' || currentPage === 'eclipse' || currentPage === 'noir' || currentPage === 'orb' ? 'bg-[#080808]' : 
+      (currentPage === 'galaxy' || currentPage === 'eclipse' || currentPage === 'noir' || currentPage === 'orb' || currentPage === 'kinetic' ? 'bg-[#080808]' : 
       (currentPage === 'chasm' ? 'bg-[#111]' : 
       (currentPage === 'bloom' || currentPage === 'lens' ? 'bg-[#f8f8f8]' : 
-      (currentPage === 'kinetic' ? 'bg-[#f2f2f2]' : 'bg-[#f5f5f5]'))))
+      'bg-[#f5f5f5]')))
     }`}>
       
       {/* Menu Toggle Button */}
@@ -77,39 +77,39 @@ const App: React.FC = () => {
 
       {/* Full Screen Overlay Menu */}
       <div 
-        className={`fixed inset-0 z-50 bg-black/80 backdrop-blur-xl transition-all duration-500 ease-in-out flex flex-col ${
+        className={`fixed inset-0 z-50 bg-black/90 backdrop-blur-xl transition-all duration-500 ease-in-out flex flex-col ${
           isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       >
         {/* Close Button */}
         <button 
           onClick={() => setIsMenuOpen(false)}
-          className="absolute top-6 right-6 text-white/70 hover:text-white p-2"
+          className="absolute top-6 right-6 text-white/70 hover:text-white p-2 z-50"
         >
           <X size={32} />
         </button>
 
-        {/* Menu Grid */}
-        <div className="flex-1 overflow-y-auto p-8 flex items-center justify-center">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl w-full">
+        {/* Menu Grid - Mobile Optimized */}
+        <div className="flex-1 overflow-y-auto pt-24 pb-12 px-6 flex items-start justify-center">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl w-full">
             {PAGES.map((page) => (
               <button
                 key={page.id}
                 onClick={() => handlePageChange(page.id)}
-                className={`group relative overflow-hidden rounded-xl p-6 text-left transition-all duration-300 border ${
+                className={`group relative overflow-hidden rounded-xl p-4 text-left transition-all duration-300 border ${
                   currentPage === page.id 
-                    ? 'bg-white text-black border-white scale-105 shadow-xl' 
+                    ? 'bg-white text-black border-white scale-100 shadow-xl' 
                     : 'bg-white/5 text-white border-white/10 hover:bg-white/10 hover:border-white/30'
                 }`}
               >
-                <div className="relative z-10">
-                  <h3 className="text-xl font-serif font-bold tracking-wider mb-2">{page.label}</h3>
-                  <p className={`text-xs uppercase tracking-widest ${currentPage === page.id ? 'text-gray-500' : 'text-gray-400'}`}>
+                <div className="relative z-10 w-full">
+                  <h3 className="text-sm sm:text-lg font-serif font-bold tracking-wider mb-1 truncate w-full">{page.label}</h3>
+                  <p className={`text-[10px] sm:text-xs uppercase tracking-widest truncate w-full ${currentPage === page.id ? 'text-gray-500' : 'text-gray-400'}`}>
                     {page.desc}
                   </p>
                 </div>
                 {/* Decoration */}
-                <div className={`absolute -bottom-4 -right-4 w-20 h-20 rounded-full blur-2xl transition-opacity duration-500 ${
+                <div className={`absolute -bottom-4 -right-4 w-16 h-16 rounded-full blur-2xl transition-opacity duration-500 ${
                   currentPage === page.id ? 'bg-indigo-500/20' : 'bg-blue-500/0 group-hover:bg-blue-500/20'
                 }`} />
               </button>

@@ -10,14 +10,12 @@ const EntropyEffect: React.FC = () => {
   const [key, setKey] = useState(0); 
   const requestRef = useRef<number>(0);
   
-  // State refs
   const mouseRef = useRef({ x: -1000, y: -1000 });
   const particlesRef = useRef<FlowParticle[]>([]);
   const phaseRef = useRef<AnimationPhase>('IDLE');
   const lastInteractionRef = useRef<number>(0);
   const stateTimerRef = useRef<number>(0);
   
-  // State for UI label
   const [phaseLabel, setPhaseLabel] = useState<string>('Order');
 
   const handleRestart = () => {
@@ -31,11 +29,9 @@ const EntropyEffect: React.FC = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // --- Configuration ---
     const NOISE_SCALE = 0.003; 
     const FONT_SIZE = 12;
     
-    // --- Helper: Pseudo Noise for Flow Field ---
     const getFlowVector = (x: number, y: number, time: number) => {
       const angle = (Math.sin(x * NOISE_SCALE) + Math.cos(y * NOISE_SCALE) + time * 0.5) * Math.PI * 2;
       return {
@@ -44,9 +40,7 @@ const EntropyEffect: React.FC = () => {
       };
     };
 
-    // --- Helper: Generate targets for "IRREVERSIBLE" ---
-    const generateMessagePoints = (width: number, height: number, count: number) => {
-      // Create temp canvas
+    const generateMessagePoints = (width: number, height: number) => {
       const tmpCanvas = document.createElement('canvas');
       tmpCanvas.width = width;
       tmpCanvas.height = height;
@@ -54,36 +48,39 @@ const EntropyEffect: React.FC = () => {
       if (!tCtx) return [];
 
       tCtx.fillStyle = 'black';
-      tCtx.font = 'bold 120px "Arial Black", Gadget, sans-serif'; // Big bold font
       tCtx.textAlign = 'center';
       tCtx.textBaseline = 'middle';
       
-      const text = "IRREVERSIBLE";
-      tCtx.fillText(text, width / 2, height / 2);
+      // Responsive text sizing and splitting
+      if (width < 600) {
+        // Mobile: Split into two lines
+        tCtx.font = 'bold 60px "Arial Black", sans-serif'; 
+        tCtx.fillText("IRRE", width / 2, height / 2 - 40);
+        tCtx.fillText("VERSIBLE", width / 2, height / 2 + 40);
+      } else {
+        // Desktop: One huge line
+        tCtx.font = 'bold 120px "Arial Black", sans-serif';
+        tCtx.fillText("IRREVERSIBLE", width / 2, height / 2);
+      }
 
-      // Get pixels
       const imageData = tCtx.getImageData(0, 0, width, height);
       const data = imageData.data;
       const points: {x: number, y: number}[] = [];
-      
-      // Sampling step (optimize performance)
       const step = 4; 
       
       for (let y = 0; y < height; y += step) {
         for (let x = 0; x < width; x += step) {
           const index = (y * width + x) * 4;
-          if (data[index + 3] > 128) { // If pixel is not transparent
+          if (data[index + 3] > 128) { 
             points.push({ x, y });
           }
         }
       }
       
-      // Shuffle points to distribute randomly
       for (let i = points.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [points[i], points[j]] = [points[j], points[i]];
       }
-      
       return points;
     };
 
@@ -93,7 +90,6 @@ const EntropyEffect: React.FC = () => {
       
       const particles: FlowParticle[] = [];
       
-      // 1. Layout Paragraph Text
       ctx.font = `${FONT_SIZE}px "Times New Roman", serif`;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
@@ -139,17 +135,14 @@ const EntropyEffect: React.FC = () => {
         cursorY += lineHeight * 1.5;
       });
 
-      // 2. Generate Message Targets
-      const messagePoints = generateMessagePoints(canvas.width, canvas.height, particles.length);
+      const messagePoints = generateMessagePoints(canvas.width, canvas.height);
       
-      // Assign targets to particles
       particles.forEach((p, i) => {
         const target = messagePoints[i % messagePoints.length];
         if (target) {
           p.messageX = target.x;
           p.messageY = target.y;
         } else {
-          // Fallback center cluster if sparse
           p.messageX = canvas.width / 2 + (Math.random() - 0.5) * 200;
           p.messageY = canvas.height / 2 + (Math.random() - 0.5) * 100;
         }
@@ -166,7 +159,6 @@ const EntropyEffect: React.FC = () => {
       time += 0.005;
       const now = Date.now();
       
-      // Clear canvas
       const currentPhase = phaseRef.current;
       if (currentPhase === 'CHAOS') {
         ctx.fillStyle = 'rgba(245, 245, 245, 0.3)';
@@ -179,43 +171,34 @@ const EntropyEffect: React.FC = () => {
       const mx = mouseRef.current.x;
       const my = mouseRef.current.y;
       
-      // --- Phase Transition Logic ---
       const timeSinceInteract = now - lastInteractionRef.current;
       
       if (currentPhase === 'IDLE') {
-        // Interaction handled in mouse move listener
       } else if (currentPhase === 'CHAOS') {
-         // If no interaction for 1.2s, start assembling message
          if (timeSinceInteract > 1200) {
             phaseRef.current = 'ASSEMBLING';
             setPhaseLabel('Convergence');
          }
       } else if (currentPhase === 'ASSEMBLING') {
-         // Count how many particles are close to target
          let closeCount = 0;
-         let totalDist = 0;
          particles.forEach(p => {
            const dx = (p.messageX || 0) - p.x;
            const dy = (p.messageY || 0) - p.y;
            const d = dx*dx + dy*dy;
            if (d < 100) closeCount++;
-           totalDist += d;
          });
          
-         // Trigger reveal when mostly assembled
          if (closeCount > particles.length * 0.8) {
            phaseRef.current = 'REVEAL';
            setPhaseLabel('Truth');
            stateTimerRef.current = now; 
          }
       } else if (currentPhase === 'REVEAL') {
-         // Hold for 3.5 seconds
          if (now - stateTimerRef.current > 3500) {
            phaseRef.current = 'RETURNING';
            setPhaseLabel('Acceptance');
          }
       } else if (currentPhase === 'RETURNING') {
-         // When mostly returned, go IDLE
          let closeCount = 0;
          particles.forEach(p => {
            const dx = p.originX - p.x;
@@ -234,10 +217,7 @@ const EntropyEffect: React.FC = () => {
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
         
-        // --- Physics per Phase ---
-        
         if (currentPhase === 'CHAOS') {
-          // 1. Mouse repulsion
           const dx = mx - p.x;
           const dy = my - p.y;
           const distSq = dx*dx + dy*dy;
@@ -251,17 +231,15 @@ const EntropyEffect: React.FC = () => {
              p.energy = Math.min(p.energy + 0.2, 1.0);
           }
 
-          // 2. Flow Field (Entropy)
           const flow = getFlowVector(p.x, p.y, time);
           const flowStrength = 0.5 + p.energy * 2; 
           
           p.vx += flow.x * flowStrength * 0.1;
           p.vy += flow.y * flowStrength * 0.1;
           
-          p.energy *= 0.99; // Decay energy
+          p.energy *= 0.99; 
 
         } else if (currentPhase === 'ASSEMBLING') {
-           // Move swiftly towards message
            const tx = p.messageX || p.originX;
            const ty = p.messageY || p.originY;
            const dx = tx - p.x;
@@ -270,39 +248,29 @@ const EntropyEffect: React.FC = () => {
            p.vx += dx * 0.035;
            p.vy += dy * 0.035;
            
-           // Swarm noise
            p.vx += (Math.random() - 0.5) * 0.5;
            p.vy += (Math.random() - 0.5) * 0.5;
 
         } else if (currentPhase === 'REVEAL') {
-           // Hold shape tightly
            const tx = p.messageX || p.originX;
            const ty = p.messageY || p.originY;
            const dx = tx - p.x;
            const dy = ty - p.y;
            
-           // Stiff spring to hold shape
            p.vx += dx * 0.15;
            p.vy += dy * 0.15;
-           
-           // Minimal jitter
            p.vx += (Math.random() - 0.5) * 0.1;
            p.vy += (Math.random() - 0.5) * 0.1;
 
         } else if (currentPhase === 'RETURNING') {
-           // Drift back home slowly
            const dx = p.originX - p.x;
            const dy = p.originY - p.y;
-           
            p.vx += dx * 0.012;
            p.vy += dy * 0.012;
-           
-           // Heavy drag
            p.vx *= 0.85; 
            p.vy *= 0.85;
 
         } else if (currentPhase === 'IDLE') {
-           // Stay put with slight organic breathing
            const dx = p.originX - p.x;
            const dy = p.originY - p.y;
            p.vx += dx * 0.1;
@@ -311,9 +279,8 @@ const EntropyEffect: React.FC = () => {
            p.vy *= 0.8;
         }
 
-        // Apply Friction/Damping
         if (currentPhase === 'ASSEMBLING' || currentPhase === 'REVEAL') {
-             p.vx *= 0.82; // Heavy damping for control
+             p.vx *= 0.82; 
              p.vy *= 0.82;
         } else {
              p.vx *= p.friction;
@@ -323,11 +290,9 @@ const EntropyEffect: React.FC = () => {
         p.x += p.vx;
         p.y += p.vy;
 
-        // Render
         const speed = Math.abs(p.vx) + Math.abs(p.vy);
         
         if (currentPhase === 'REVEAL') {
-             // Make text solid black for readability
              ctx.fillStyle = 'black';
              ctx.fillText(p.char, p.x, p.y);
         } else {
@@ -349,8 +314,6 @@ const EntropyEffect: React.FC = () => {
       mouseRef.current = { x: e.clientX, y: e.clientY };
       lastInteractionRef.current = Date.now();
       
-      // Only transition to CHAOS if we are in a resting state
-      // If we are assembling or revealing, don't interrupt the "Truth"
       if (phaseRef.current === 'IDLE' || phaseRef.current === 'RETURNING') {
         phaseRef.current = 'CHAOS';
         setPhaseLabel('Disorder');
@@ -378,7 +341,6 @@ const EntropyEffect: React.FC = () => {
   return (
     <div className="relative w-full h-full cursor-crosshair">
       <canvas ref={canvasRef} className="block w-full h-full" />
-      
       <button 
         onClick={handleRestart}
         className="absolute top-20 left-4 p-2 bg-white/80 rounded-full hover:bg-white transition-colors shadow-sm text-gray-600 hover:text-black z-10"
@@ -386,7 +348,6 @@ const EntropyEffect: React.FC = () => {
         <RotateCcw size={20} />
       </button>
 
-      {/* Dynamic Title */}
        <div className="absolute bottom-10 left-0 w-full text-center pointer-events-none transition-opacity duration-1000">
         <h2 className="text-gray-400 font-serif text-sm tracking-[0.5em] uppercase opacity-60">
             Entropy / {phaseLabel}

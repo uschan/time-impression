@@ -27,6 +27,11 @@ const GravityEffect: React.FC = () => {
     const BOUNCE = 0.5;
     const FLOOR_FRICTION = 0.9;
 
+    // Vibrant palette
+    const COLORS = [
+        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#FFCC5C', '#FF9671', '#D4A5A5'
+    ];
+
     const init = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -34,16 +39,18 @@ const GravityEffect: React.FC = () => {
       const bodies: RigidBody[] = [];
       
       GRAVITY_WORDS.forEach((word, i) => {
-        ctx.font = 'bold 32px "Arial Black", sans-serif';
+        ctx.font = 'bold 24px "Arial", sans-serif';
         const metrics = ctx.measureText(word);
-        const width = metrics.width;
-        const height = 30;
+        const textWidth = metrics.width;
+        // Capsule dimensions
+        const width = textWidth + 40;
+        const height = 50;
 
         bodies.push({
           id: i,
           text: word,
           x: Math.random() * (canvas.width - width),
-          y: -Math.random() * 800 - 100, // Start high up
+          y: -Math.random() * 800 - 100, 
           angle: (Math.random() - 0.5) * 1,
           width,
           height,
@@ -52,7 +59,7 @@ const GravityEffect: React.FC = () => {
           angularVelocity: (Math.random() - 0.5) * 0.1,
           mass: width * 0.05,
           isDragging: false,
-          color: '#1a1a1a'
+          color: COLORS[i % COLORS.length]
         });
       });
 
@@ -66,8 +73,10 @@ const GravityEffect: React.FC = () => {
                 const b1 = bodies[i];
                 const b2 = bodies[j];
                 
-                // Simple circle collision approx
-                const r1 = b1.width / 2.2; // Slightly tighter bounds
+                // Capsule collision is hard, approximating with circles based on max dim
+                // Or axis aligned boxes? 
+                // Let's stick to rotated circle approximation for "good enough" fun physics
+                const r1 = b1.width / 2.2;
                 const r2 = b2.width / 2.2;
                 const distSq = (b1.x - b2.x)**2 + (b1.y - b2.y)**2;
                 const minDist = r1 + r2;
@@ -78,7 +87,6 @@ const GravityEffect: React.FC = () => {
                     const dx = (b1.x - b2.x) / (dist || 1);
                     const dy = (b1.y - b2.y) / (dist || 1);
                     
-                    // Separate
                     const totalMass = b1.mass + b2.mass;
                     const m1Ratio = b2.mass / totalMass;
                     const m2Ratio = b1.mass / totalMass;
@@ -88,7 +96,6 @@ const GravityEffect: React.FC = () => {
                     b2.x -= dx * overlap * m2Ratio;
                     b2.y -= dy * overlap * m2Ratio;
                     
-                    // Bounce
                     const relativeVx = b1.vx - b2.vx;
                     const relativeVy = b1.vy - b2.vy;
                     const velAlongNormal = relativeVx * dx + relativeVy * dy;
@@ -102,13 +109,19 @@ const GravityEffect: React.FC = () => {
                         b2.vx -= jVal * dx / b2.mass;
                         b2.vy -= jVal * dy / b2.mass;
 
-                        // Add spin on collision
                         b1.angularVelocity += (Math.random()-0.5) * 0.05;
                         b2.angularVelocity += (Math.random()-0.5) * 0.05;
                     }
                 }
             }
         }
+    };
+
+    const drawCapsule = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, radius: number) => {
+        // Draw centered capsule
+        ctx.beginPath();
+        ctx.roundRect(-w/2, -h/2, w, h, radius);
+        ctx.fill();
     };
 
     const animate = () => {
@@ -121,7 +134,6 @@ const GravityEffect: React.FC = () => {
       const mx = mouseRef.current.x;
       const my = mouseRef.current.y;
 
-      // Draw Gravity Well Indicator
       if (isAttracting) {
          ctx.beginPath();
          ctx.arc(mx, my, 20, 0, Math.PI*2);
@@ -136,33 +148,26 @@ const GravityEffect: React.FC = () => {
          ctx.fill();
       }
 
-      // Physics Loop
       resolveCollisions();
 
       bodies.forEach(b => {
         
         if (isAttracting) {
-            // BLACK HOLE PHYSICS
             const dx = mx - b.x;
             const dy = my - b.y;
             const dist = Math.sqrt(dx*dx + dy*dy);
-            
-            // Strong pull
-            const force = 300 / (dist + 10); // Inverse linear stronger than sq for gamefeel
+            const force = 300 / (dist + 10); 
             const angle = Math.atan2(dy, dx);
             
             b.vx += Math.cos(angle) * force;
             b.vy += Math.sin(angle) * force;
             
-            // Damping (Drag) to prevent orbiting forever
             b.vx *= 0.90;
             b.vy *= 0.90;
             
-            // Rotate towards center
             b.angularVelocity += (Math.random()-0.5) * 0.05;
 
         } else {
-            // Normal Gravity
             b.vy += GRAVITY;
             b.vx *= FRICTION;
             b.vy *= FRICTION;
@@ -179,7 +184,6 @@ const GravityEffect: React.FC = () => {
             b.y = floorY;
             b.vy *= -BOUNCE;
             b.vx *= FLOOR_FRICTION;
-            
             if (Math.abs(b.vy) < GRAVITY) b.vy = 0;
         }
         
@@ -193,21 +197,42 @@ const GravityEffect: React.FC = () => {
             b.vx *= -BOUNCE;
         }
 
-        // Draw
         ctx.save();
         ctx.translate(b.x, b.y);
         ctx.rotate(b.angle);
         
         // Shadow
         ctx.fillStyle = 'rgba(0,0,0,0.15)';
-        ctx.fillRect(-b.width/2 + 3, -b.height/2 + 3, b.width, b.height);
+        ctx.beginPath();
+        const r = b.height/2;
+        ctx.roundRect(-b.width/2 + 4, -b.height/2 + 4, b.width, b.height, r);
+        ctx.fill();
         
+        // Body (Capsule)
+        ctx.fillStyle = b.color;
+        
+        // Add a glossy shine gradient
+        const grad = ctx.createLinearGradient(-b.width/2, -b.height/2, b.width/2, b.height/2);
+        grad.addColorStop(0, b.color);
+        grad.addColorStop(0.5, 'white'); // Shine
+        grad.addColorStop(1, b.color);
+        // Actually, let's keep it flat vector style but nice color
+        // ctx.fillStyle = grad; 
+        
+        drawCapsule(ctx, 0, 0, b.width, b.height, b.height/2);
+        
+        // Shine mark
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(-b.width/4, -b.height/4, b.width/4, b.height/5, 0, 0, Math.PI*2);
+        ctx.fill();
+
         // Text
-        ctx.fillStyle = isAttracting ? '#000' : (Math.abs(b.vx)+Math.abs(b.vy) > 5 ? '#D92222' : b.color);
-        ctx.font = 'bold 32px "Arial Black", sans-serif';
+        ctx.fillStyle = '#111';
+        ctx.font = 'bold 18px "Arial", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(b.text, 0, 0);
+        ctx.fillText(b.text, 0, 1); // slight offset
         
         ctx.restore();
       });
@@ -233,7 +258,6 @@ const GravityEffect: React.FC = () => {
     const handleMouseUp = () => {
         mouseRef.current.isDown = false;
         
-        // Explosion on release!
         const bodies = bodiesRef.current;
         const mx = mouseRef.current.x;
         const my = mouseRef.current.y;
@@ -288,7 +312,7 @@ const GravityEffect: React.FC = () => {
       
        <div className="absolute bottom-10 left-0 w-full text-center pointer-events-none">
         <h2 className="text-gray-400 font-serif text-sm tracking-[0.5em] uppercase opacity-60">
-            GRAVITY / HOLD TO COLLAPSE
+            GRAVITY / CONCEPTS
         </h2>
       </div>
     </div>

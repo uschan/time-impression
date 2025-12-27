@@ -14,7 +14,7 @@ const ChristmasTreeEffect: React.FC = () => {
     snow: SnowParticle[];
   }>({ nodes: [], springs: [], snow: [] });
 
-  const mouseRef = useRef({ x: -1000, y: -1000 });
+  const mouseRef = useRef({ x: -1000, y: -1000, vx: 0, vy: 0, lastX: 0, lastY: 0 });
 
   const handleRestart = () => {
     setKey(prev => prev + 1);
@@ -33,10 +33,9 @@ const ChristmasTreeEffect: React.FC = () => {
     const SPREAD_FACTOR = 35; 
     const LAYER_HEIGHT = 45;
     
-    // Physics
+    // Physics - Stabilized
     const GRAVITY = 0.5;
-    const FRICTION = 0.96;
-    const GROUND_REPULSION = 0.8;
+    const FRICTION = 0.92; // Slightly more drag to stop oscillation
     
     // --- Initialization ---
     const init = () => {
@@ -63,9 +62,9 @@ const ChristmasTreeEffect: React.FC = () => {
 
           nodes.push({
             x, y,
-            oldX: x + (Math.random() - 0.5) * 5, // Give initial velocity
+            oldX: x,
             oldY: y,
-            mass: 1.0,
+            mass: 1.0 + layer * 0.1, // Heavier at bottom
             isFixed,
             layer,
             text: CHRISTMAS_TEXT[Math.floor(Math.random() * CHRISTMAS_TEXT.length)],
@@ -73,33 +72,32 @@ const ChristmasTreeEffect: React.FC = () => {
           });
 
           // 2. Build Springs (Connections)
+          // Stronger structure
           if (layer > 0) {
             const prevLayerCount = layer;
             const prevLayerStartIndex = globalIndex - prevLayerCount;
             
-            // Connect to "parents"
             const ratio = i / (count - 1 || 1);
             const parentIndexRelative = Math.round(ratio * (prevLayerCount - 1));
             const parentIndex = prevLayerStartIndex + parentIndexRelative;
             
             // Primary parent
             if (parentIndex >= 0 && parentIndex < globalIndex) {
-               addSpring(globalIndex, parentIndex, springs, nodes);
+               addSpring(globalIndex, parentIndex, springs, nodes, 0.8); // Stiff
             }
-            // Cross-bracing for stability (connect to parent's neighbor)
-            // Left parent neighbor
-             if (parentIndex - 1 >= prevLayerStartIndex) {
-                addSpring(globalIndex, parentIndex - 1, springs, nodes);
-             }
-             // Right parent neighbor
-             if (parentIndex + 1 < globalIndex && parentIndex + 1 >= prevLayerStartIndex) {
-                addSpring(globalIndex, parentIndex + 1, springs, nodes);
-             }
+            
+            // Cross-bracing (Truss structure)
+            if (parentIndex - 1 >= prevLayerStartIndex) {
+               addSpring(globalIndex, parentIndex - 1, springs, nodes, 0.4);
+            }
+            if (parentIndex + 1 < globalIndex && parentIndex + 1 >= prevLayerStartIndex) {
+               addSpring(globalIndex, parentIndex + 1, springs, nodes, 0.4);
+            }
           }
 
-          // Horizontal structural springs (connect to neighbor in same layer)
+          // Horizontal structural springs
           if (i > 0) {
-            addSpring(globalIndex, globalIndex - 1, springs, nodes);
+            addSpring(globalIndex, globalIndex - 1, springs, nodes, 0.6);
           }
 
           globalIndex++;
@@ -122,7 +120,7 @@ const ChristmasTreeEffect: React.FC = () => {
       stateRef.current = { nodes, springs, snow };
     };
 
-    const addSpring = (idxA: number, idxB: number, springs: TreeSpring[], nodes: TreeNode[]) => {
+    const addSpring = (idxA: number, idxB: number, springs: TreeSpring[], nodes: TreeNode[], stiffness: number) => {
        const dx = nodes[idxA].x - nodes[idxB].x;
        const dy = nodes[idxA].y - nodes[idxB].y;
        const dist = Math.sqrt(dx*dx + dy*dy);
@@ -130,7 +128,7 @@ const ChristmasTreeEffect: React.FC = () => {
          a: idxA,
          b: idxB,
          restLength: dist,
-         stiffness: 0.15 + Math.random() * 0.1 // Random stiffness for organic feel
+         stiffness: stiffness
        });
        nodes[idxA].connections.push(idxB);
        nodes[idxB].connections.push(idxA);
@@ -157,25 +155,29 @@ const ChristmasTreeEffect: React.FC = () => {
         node.x += vx;
         node.y += vy + GRAVITY;
 
-        // Mouse Interaction (Wind/Push)
+        // Interaction: Gentle Wind / Sway
+        // Only affect if mouse is moving fast enough or clicking
         const dx = node.x - mouseRef.current.x;
         const dy = node.y - mouseRef.current.y;
         const distSq = dx*dx + dy*dy;
-        const radius = 150;
+        const radius = 200;
         
         if (distSq < radius * radius) {
            const dist = Math.sqrt(distSq);
-           const force = (1 - dist / radius) * 2; // Strong push
-           node.x += (dx / dist) * force * 5;
-           node.y += (dy / dist) * force * 5;
+           const force = (1 - dist / radius); 
            
-           // Add "Excite" factor to snow near collision
+           // Instead of explosive push, use mouse velocity to "drag" air
+           const windX = mouseRef.current.vx * 0.2;
+           const windY = mouseRef.current.vy * 0.2;
+           
+           node.x += windX * force;
+           node.y += windY * force;
         }
       }
 
-      // --- 2. Physics: Constraint Solving (Springs) ---
-      // Multiple iterations for stability
-      for (let iter = 0; iter < 4; iter++) {
+      // --- 2. Physics: Constraint Solving ---
+      // 5 Iterations for stability
+      for (let iter = 0; iter < 5; iter++) {
         for (let i = 0; i < springs.length; i++) {
           const s = springs[i];
           const nA = nodes[s.a];
@@ -186,9 +188,10 @@ const ChristmasTreeEffect: React.FC = () => {
           const dist = Math.sqrt(dx*dx + dy*dy) || 0.1;
           const diff = (s.restLength - dist) / dist;
           
-          // Apply correction
-          const offsetX = dx * diff * s.stiffness * 0.5;
-          const offsetY = dy * diff * s.stiffness * 0.5;
+          const stiffness = s.stiffness; // Higher stiffness
+
+          const offsetX = dx * diff * stiffness * 0.5;
+          const offsetY = dy * diff * stiffness * 0.5;
 
           if (!nA.isFixed) {
             nA.x += offsetX;
@@ -217,7 +220,7 @@ const ChristmasTreeEffect: React.FC = () => {
 
       // --- 4. Draw Connections ---
       ctx.lineWidth = 1;
-      ctx.strokeStyle = 'rgba(217, 34, 34, 0.4)'; // Red faint lines
+      ctx.strokeStyle = 'rgba(217, 34, 34, 0.3)';
       ctx.beginPath();
       for (let s of springs) {
         ctx.moveTo(nodes[s.a].x, nodes[s.a].y);
@@ -232,13 +235,11 @@ const ChristmasTreeEffect: React.FC = () => {
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
         
-        // Dynamic Font Size based on movement or position
         const velocity = Math.abs(node.x - node.oldX) + Math.abs(node.y - node.oldY);
-        const fontSize = Math.min(16, 10 + velocity * 2);
+        const fontSize = Math.min(16, 10 + velocity * 1.5);
         
         ctx.font = `${fontSize}px "Times New Roman", serif`;
         
-        // Text Color: Fade based on layer
         const alpha = 1 - (node.layer / (LAYERS + 5));
         ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
         
@@ -260,7 +261,12 @@ const ChristmasTreeEffect: React.FC = () => {
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      mouseRef.current = { x: e.clientX, y: e.clientY };
+      mouseRef.current.vx = e.clientX - mouseRef.current.lastX;
+      mouseRef.current.vy = e.clientY - mouseRef.current.lastY;
+      mouseRef.current.lastX = e.clientX;
+      mouseRef.current.lastY = e.clientY;
+      mouseRef.current.x = e.clientX;
+      mouseRef.current.y = e.clientY;
     };
 
     window.addEventListener('mousemove', handleMouseMove);
