@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Time Impression</title>
+    <!-- Use relative path for favicon/assets if you add them later -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #f5f5f5;
+        font-family: 'Times New Roman', serif;
+      }
+      canvas {
+        display: block;
+      }
+      /* Simple loading state */
+      #root:empty::before {
+        content: 'Loading visual experiments...';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #999;
+        font-size: 14px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "vite": "https://esm.sh/vite@^7.3.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <!-- 
+      CRITICAL FOR VITE: 
+      1. Use type="module"
+      2. Point to the local entry file (index.tsx)
+      3. Use relative path (./) to support subdirectory hosting
+    -->
+    <script type="module" src="./index.tsx"></script>
+  </body>
+</html>
