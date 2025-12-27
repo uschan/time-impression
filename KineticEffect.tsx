@@ -28,9 +28,9 @@ const KineticEffect: React.FC = () => {
       const cells: KineticCell[] = [];
       const words = KINETIC_TEXT.split(' ');
       
-      // Much higher density
-      const COLUMNS = Math.floor(canvas.width / 40);
-      const ROWS = Math.floor(canvas.height / 25);
+      // High density grid
+      const COLUMNS = Math.floor(canvas.width / 30); // Smaller cells
+      const ROWS = Math.floor(canvas.height / 20);
       
       const cellW = canvas.width / COLUMNS;
       const cellH = canvas.height / ROWS;
@@ -40,7 +40,6 @@ const KineticEffect: React.FC = () => {
               const cx = x * cellW + cellW/2;
               const cy = y * cellH + cellH/2;
               
-              // Pattern generation: alternating words or solid blocks
               const word = words[(x + y * COLUMNS) % words.length];
               
               cells.push({
@@ -61,8 +60,8 @@ const KineticEffect: React.FC = () => {
     };
 
     const animate = () => {
-      // High contrast aesthetic
-      ctx.fillStyle = '#111'; 
+      // Vintage Dark Paper Background
+      ctx.fillStyle = '#1a1a1a'; 
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const mx = mouseRef.current.x;
@@ -80,53 +79,54 @@ const KineticEffect: React.FC = () => {
           const distSq = dx*dx + dy*dy;
           const dist = Math.sqrt(distSq);
           
-          const maxDist = 300;
+          const maxDist = 250;
           
           let displaceX = 0;
           let displaceY = 0;
           let scale = 1;
           
-          // Wave / Ripples
-          // Global wave
-          const wave = Math.sin(cell.originX * 0.01 + cell.originY * 0.01 + time) * 5;
+          // Organic Wave
+          const wave = Math.sin(cell.originX * 0.02 + cell.originY * 0.02 + time) * 3;
           
           if (dist < maxDist) {
               const effect = (1 - dist / maxDist);
-              const power = effect * effect * effect; // Sharper falloff
+              const power = effect * effect; // Smoother falloff
               
-              // Push away logic (Displacement Map style)
               const angle = Math.atan2(dy, dx);
               
-              // Push text away from mouse to create a "lens" or "bubble"
-              const push = 60 * power;
+              // Gentle Push
+              const push = 40 * power;
               displaceX = -Math.cos(angle) * push;
               displaceY = -Math.sin(angle) * push;
               
               // Magnify
-              scale = 1 + power * 2.5; 
+              scale = 1 + power * 1.5; 
           }
           
-          // Apply physics smoothing
+          // Physics smoothing
           cell.x += (cell.originX + displaceX - cell.x) * 0.1;
           cell.y += (cell.originY + displaceY + wave - cell.y) * 0.1;
           cell.stretchX += (scale - cell.stretchX) * 0.1;
 
-          // Render
-          const fontSize = Math.min(cell.width, cell.height) * 0.7 * cell.stretchX;
+          // Vintage Typewriter Style
+          // Smaller font relative to cell
+          const fontSize = Math.min(cell.width, cell.height) * 0.5 * cell.stretchX;
           
-          if (fontSize < 2) return; // Optimization
+          if (fontSize < 2) return; 
 
-          ctx.font = `bold ${fontSize}px "Arial", sans-serif`;
+          // Using Courier New for that typewriter feel
+          ctx.font = `bold ${fontSize}px "Courier New", Courier, monospace`;
           
-          // Dynamic Color
-          // White normally, but turning Cyan/Magenta on high distortion
-          if (cell.stretchX > 1.5) {
-             const t = (cell.stretchX - 1.5) / 2;
-             ctx.fillStyle = `rgb(${255 * (1-t)}, 255, ${255 * (1-t) + 100})`;
+          // Color logic: Aged white text
+          if (cell.stretchX > 1.2) {
+             // Highlight
+             const t = (cell.stretchX - 1.2) / 1.5;
+             ctx.fillStyle = `rgb(255, ${255 - t * 50}, ${200 - t * 100})`;
           } else {
-             ctx.fillStyle = '#444';
-             if (Math.abs(mx - cell.x) < 50 && Math.abs(my - cell.y) < 50) {
-                 ctx.fillStyle = '#fff';
+             ctx.fillStyle = '#666'; // Dimmed by default
+             // Cursor spotlight
+             if (dist < 80) {
+                 ctx.fillStyle = '#eee';
              }
           }
           
@@ -158,7 +158,7 @@ const KineticEffect: React.FC = () => {
   }, [key]);
 
   return (
-    <div className="relative w-full h-full cursor-none bg-[#111]">
+    <div className="relative w-full h-full cursor-none bg-[#1a1a1a]">
       <canvas ref={canvasRef} className="block w-full h-full" />
       <button 
         onClick={handleRestart}
@@ -168,8 +168,8 @@ const KineticEffect: React.FC = () => {
       </button>
       
        <div className="absolute bottom-10 left-0 w-full text-center pointer-events-none">
-        <h2 className="text-white font-sans font-black text-sm tracking-tighter uppercase opacity-50">
-            KINETIC / DISPLACEMENT
+        <h2 className="text-gray-500 font-mono text-xs tracking-widest uppercase">
+            KINETIC / TYPEWRITER
         </h2>
       </div>
     </div>

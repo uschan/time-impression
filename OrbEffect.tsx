@@ -25,7 +25,7 @@ const OrbEffect: React.FC = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const RADIUS = 280;
+    const RADIUS = Math.min(window.innerWidth, window.innerHeight) * 0.35;
     const COUNT = 180;
 
     const init = () => {
@@ -85,11 +85,7 @@ const OrbEffect: React.FC = () => {
       }
       
       const currentCollapse = collapseRef.current;
-      const breathing = Math.sin(pulseRef.current) * 10;
       
-      // When collapsed: Shrink radius, random jitter
-      // When normal: Standard radius + breathing
-
       // Pre-calculate Rotation Matrix
       const cosY = Math.cos(rotationRef.current.y);
       const sinY = Math.sin(rotationRef.current.y);
@@ -97,7 +93,6 @@ const OrbEffect: React.FC = () => {
       const sinX = Math.sin(rotationRef.current.x);
 
       // 3. Draw Core Glow (Back)
-      const coreSize = 100 * (1 - currentCollapse * 0.8);
       const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, RADIUS * 1.2);
       grad.addColorStop(0, 'rgba(0, 255, 255, 0.15)');
       grad.addColorStop(0.4, 'rgba(0, 100, 255, 0.05)');
@@ -174,20 +169,15 @@ const OrbEffect: React.FC = () => {
       projectedNodes.sort((a, b) => b.z - a.z);
 
       // 4. Draw Connections (Plexus)
-      // Optimization: Only connect nodes that are relatively close in Z and XY
-      // And prioritize nodes in front
       ctx.lineWidth = 0.8;
       ctx.lineCap = 'round';
       
-      // We process only top 70% of nodes (closest to camera) to save perf and visual clutter
       const drawLimit = Math.floor(projectedNodes.length * 0.7);
       
       for(let i=0; i<drawLimit; i++) {
           const p1 = projectedNodes[i];
-          if (p1.alpha < 0.2) continue; // Skip very faint nodes
+          if (p1.alpha < 0.2) continue; 
           
-          // Check neighbors in sorted array (approximate spatial locality)
-          // checking next 10 neighbors is a good heuristic for sphere surface
           for(let j=i+1; j<Math.min(i+12, projectedNodes.length); j++) {
               const p2 = projectedNodes[j];
               
@@ -195,15 +185,12 @@ const OrbEffect: React.FC = () => {
               const dy = p1.y - p2.y;
               const distSq = dx*dx + dy*dy;
               
-              // Dynamic connection distance based on collapse
-              const connectDist = 3600 * (1 - currentCollapse * 0.9); // 60px -> small
+              const connectDist = 3600 * (1 - currentCollapse * 0.9); 
 
               if (distSq < connectDist) {
-                   // Calculate line alpha based on nodes alpha
                    const avgAlpha = (p1.alpha + p2.alpha) / 2;
                    const distAlpha = 1 - (distSq / connectDist);
                    
-                   // Energy beams
                    ctx.strokeStyle = `rgba(100, 220, 255, ${avgAlpha * distAlpha * 0.4})`;
                    ctx.beginPath();
                    ctx.moveTo(p1.x, p1.y);
@@ -223,21 +210,15 @@ const OrbEffect: React.FC = () => {
           if (p.alpha > 0.1) {
               ctx.font = `${p.isRing ? 'bold' : 'normal'} ${size}px "Arial", monospace`;
               
-              // Color Grading: Front -> Cyan/White, Back -> Dark Blue
-              // High Energy state (Collapse) -> Red/Orange
-              
               if (currentCollapse > 0.5) {
-                 // Danger/High Energy Color
                  const intensity = Math.floor(currentCollapse * 255);
                  ctx.fillStyle = `rgba(255, ${255-intensity}, 100, ${p.alpha})`;
                  ctx.shadowColor = 'red';
                  ctx.shadowBlur = 20 * currentCollapse;
               } else {
-                 // Standard Data Color
                  const lightness = 50 + Math.floor(p.alpha * 50);
                  ctx.fillStyle = `hsla(190, 80%, ${lightness}%, ${p.alpha})`;
                  
-                 // Glow for very front nodes
                  if (p.alpha > 0.8) {
                     ctx.shadowColor = '#0ff';
                     ctx.shadowBlur = 10;
@@ -255,35 +236,58 @@ const OrbEffect: React.FC = () => {
       requestRef.current = requestAnimationFrame(animate);
     };
 
-    // Interaction
-    const handleMouseDown = (e: MouseEvent) => {
+    // Interaction Handlers (Mouse & Touch)
+    const handleStart = (clientX: number, clientY: number) => {
         mouseRef.current.isDown = true;
-        mouseRef.current.lastX = e.clientX;
-        mouseRef.current.lastY = e.clientY;
+        mouseRef.current.lastX = clientX;
+        mouseRef.current.lastY = clientY;
     };
-    
-    const handleMouseMove = (e: MouseEvent) => {
+
+    const handleMove = (clientX: number, clientY: number) => {
         if (mouseRef.current.isDown) {
-            const dx = e.clientX - mouseRef.current.lastX;
-            const dy = e.clientY - mouseRef.current.lastY;
-            mouseRef.current.lastX = e.clientX;
-            mouseRef.current.lastY = e.clientY;
+            const dx = clientX - mouseRef.current.lastX;
+            const dy = clientY - mouseRef.current.lastY;
+            mouseRef.current.lastX = clientX;
+            mouseRef.current.lastY = clientY;
             
             // Influence spin manually
-            rotationRef.current.y += dx * 0.002;
-            rotationRef.current.x += dy * 0.002;
+            rotationRef.current.y += dx * 0.005;
+            rotationRef.current.x += dy * 0.005;
         }
     };
-    
-    const handleMouseUp = () => {
+
+    const handleEnd = () => {
         mouseRef.current.isDown = false;
-        // Add recoil spin
         momentumRef.current = { x: 0.02, y: 0.005 };
     };
 
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    // Mouse Listeners
+    const onMouseDown = (e: MouseEvent) => handleStart(e.clientX, e.clientY);
+    const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
+    const onMouseUp = () => handleEnd();
+
+    // Touch Listeners
+    const onTouchStart = (e: TouchEvent) => {
+        if(e.touches.length > 0) {
+            handleStart(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    };
+    const onTouchMove = (e: TouchEvent) => {
+        if(e.touches.length > 0) {
+            e.preventDefault(); // Prevent scrolling
+            handleMove(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    };
+    const onTouchEnd = () => handleEnd();
+
+    window.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    
+    // Add touch support
+    window.addEventListener('touchstart', onTouchStart, { passive: false });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
     
     init();
     requestRef.current = requestAnimationFrame(animate);
@@ -295,9 +299,12 @@ const OrbEffect: React.FC = () => {
     window.addEventListener('resize', handleResize);
 
     return () => {
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(requestRef.current);
     };

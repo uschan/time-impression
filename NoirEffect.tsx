@@ -26,10 +26,9 @@ const NoirEffect: React.FC = () => {
       canvas.height = window.innerHeight;
 
       const particles: NoirParticle[] = [];
-      const FONT_SIZE = 24; // Larger, more dramatic
+      const FONT_SIZE = 24; 
       const LINE_HEIGHT = 40;
       
-      // Vintage Font Fallback
       ctx.font = `italic ${FONT_SIZE}px "Georgia", "Times New Roman", serif`;
       
       const margin = Math.max(60, canvas.width * 0.2);
@@ -50,6 +49,7 @@ const NoirEffect: React.FC = () => {
         if (cursorX + wordWidth > margin + maxWidth) {
           cursorX = margin;
           cursorY += LINE_HEIGHT;
+          if (cursorY > canvas.height - 100) break;
         }
 
         for (let char of word) {
@@ -64,7 +64,7 @@ const NoirEffect: React.FC = () => {
             vx: 0,
             vy: 0,
             alpha: 0,
-            blur: 5,
+            blur: 0,
             size: FONT_SIZE
           });
 
@@ -76,15 +76,16 @@ const NoirEffect: React.FC = () => {
     };
 
     const animate = () => {
-      // Dark, grainy background handled by CSS or simple fill
       ctx.fillStyle = '#080808'; 
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const mx = mouseRef.current.x;
       const my = mouseRef.current.y;
       
-      // Spotlight gradient
+      // Spotlight logic
       const spotlightRadius = 250;
+      
+      // Draw Spotlight on background
       const grad = ctx.createRadialGradient(mx, my, 0, mx, my, spotlightRadius);
       grad.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
       grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
@@ -97,72 +98,59 @@ const NoirEffect: React.FC = () => {
       ctx.textBaseline = 'top';
 
       particles.forEach(p => {
-         // --- Logic ---
          const dx = mx - p.x;
          const dy = my - p.y;
          const dist = Math.sqrt(dx*dx + dy*dy);
          
          const inSpotlight = dist < spotlightRadius;
          
-         // 1. Visibility (Alpha & Blur)
-         // Reveal in spotlight, fade out and blur outside
-         let targetAlpha = inSpotlight ? 1 : 0.1;
-         let targetBlur = inSpotlight ? 0 : 4;
+         // 1. Visibility (Alpha only, NO FILTER BLUR)
+         let targetAlpha = inSpotlight ? 1 : 0.05;
          
          if (inSpotlight) {
-             // Calculate intensity based on center distance
              const intensity = 1 - (dist / spotlightRadius);
              targetAlpha = 0.2 + intensity * 0.8;
          }
 
-         p.alpha += (targetAlpha - p.alpha) * 0.1;
-         p.blur += (targetBlur - p.blur) * 0.1;
+         p.alpha += (targetAlpha - p.alpha) * 0.05;
 
          // 2. Smoky Movement
-         // If mouse is near, impart some "smoke" velocity
          if (inSpotlight) {
              const intensity = 1 - (dist / spotlightRadius);
-             // Drift upwards and slightly random
-             p.vx += (Math.random() - 0.5) * 0.2 * intensity;
-             p.vy -= 0.2 * intensity; // Upward drift
+             // Drift upwards and wavy
+             p.vx += (Math.random() - 0.5) * 0.5 * intensity;
+             p.vy -= 0.5 * intensity; 
              
              // Gentle swirling away from mouse
-             p.vx -= (dx / dist) * 0.1 * intensity;
-             p.vy -= (dy / dist) * 0.1 * intensity;
+             p.vx -= (dx / dist) * 0.2 * intensity;
+             p.vy -= (dy / dist) * 0.2 * intensity;
          }
 
          // 3. Return to Origin
-         // Spring force back to original position
          const ox = p.originX - p.x;
          const oy = p.originY - p.y;
          
-         // Only pull back strongly if NOT in spotlight center
-         // If in spotlight, allow more float
          const springK = inSpotlight ? 0.01 : 0.05;
          
          p.vx += ox * springK;
          p.vy += oy * springK;
          
-         // Damping
-         p.vx *= 0.92;
-         p.vy *= 0.92;
+         p.vx *= 0.9;
+         p.vy *= 0.9;
          
          p.x += p.vx;
          p.y += p.vy;
 
          // --- Render ---
-         // Optimize: skip invisible
          if (p.alpha < 0.02) return;
 
          ctx.save();
          ctx.globalAlpha = p.alpha;
          
-         if (p.blur > 0.5) {
-             ctx.filter = `blur(${p.blur}px)`;
-         }
-         
-         ctx.fillStyle = '#e0e0e0'; // Off-white smoke color
+         ctx.fillStyle = '#e0e0e0'; 
          ctx.font = `italic ${p.size}px "Georgia", serif`;
+         
+         // Simulate blur by drawing faint offset copies if alpha is low (optional, skipping for pure perf)
          ctx.fillText(p.char, p.x, p.y);
          
          ctx.restore();
@@ -202,7 +190,7 @@ const NoirEffect: React.FC = () => {
         <RotateCcw size={20} />
       </button>
       
-      {/* Noise Overlay for Film Grain */}
+      {/* CSS Grain Overlay is much cheaper than Canvas per-pixel noise */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.05] z-10" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
       }}></div>

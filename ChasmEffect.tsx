@@ -3,12 +3,23 @@ import { RotateCcw } from 'lucide-react';
 import { AbyssObject } from './types';
 import { CHASM_WORDS } from './constants';
 
+interface Debris {
+    x: number;
+    y: number;
+    size: number;
+    speed: number;
+    angle: number;
+    dist: number;
+    color: string;
+}
+
 const ChasmEffect: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [key, setKey] = useState(0); 
   const requestRef = useRef<number>(0);
   
   const bodiesRef = useRef<AbyssObject[]>([]);
+  const debrisRef = useRef<Debris[]>([]);
   const mouseRef = useRef({ x: 0, y: 0, isDown: false, dragId: -1, lastX: 0, lastY: 0 });
 
   const handleRestart = () => {
@@ -22,8 +33,8 @@ const ChasmEffect: React.FC = () => {
     if (!ctx) return;
 
     // Config
-    const CHASM_RADIUS = 60; // The actual hole size
-    const EVENT_HORIZON = 180; // Where gravity becomes inescapable
+    const CHASM_RADIUS = 60; 
+    const EVENT_HORIZON = 180; 
 
     const init = () => {
       canvas.width = window.innerWidth;
@@ -34,7 +45,6 @@ const ChasmEffect: React.FC = () => {
       const centerY = canvas.height / 2;
       
       CHASM_WORDS.forEach((word, i) => {
-        // Spawn in a ring around center
         const angle = Math.random() * Math.PI * 2;
         const dist = 300 + Math.random() * 500;
         
@@ -43,9 +53,9 @@ const ChasmEffect: React.FC = () => {
           text: word,
           x: centerX + Math.cos(angle) * dist,
           y: centerY + Math.sin(angle) * dist,
-          vx: (Math.random() - 0.5) * 1, // Slight drift
+          vx: (Math.random() - 0.5) * 1,
           vy: (Math.random() - 0.5) * 1,
-          angle: angle + Math.PI/2, // Tangential start
+          angle: angle + Math.PI/2, 
           angularVelocity: (Math.random() - 0.5) * 0.02,
           isDragging: false,
           state: 'SURFACE',
@@ -54,7 +64,20 @@ const ChasmEffect: React.FC = () => {
       });
       bodiesRef.current = bodies;
       
-      // Center mouse initially
+      // Init Debris (Accretion Disk Particles)
+      const debris: Debris[] = [];
+      for(let i=0; i<300; i++) {
+          debris.push({
+              x: 0, y: 0,
+              angle: Math.random() * Math.PI * 2,
+              dist: CHASM_RADIUS + Math.random() * 400,
+              size: Math.random() * 2,
+              speed: 0.01 + Math.random() * 0.03,
+              color: Math.random() > 0.8 ? '#ff8888' : '#8888ff' // Redshift/Blueshift hint
+          });
+      }
+      debrisRef.current = debris;
+      
       mouseRef.current.x = centerX;
       mouseRef.current.y = centerY;
     };
@@ -63,34 +86,63 @@ const ChasmEffect: React.FC = () => {
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
       
-      // 1. Draw Background
-      // Radial gradient for the void
+      // 1. Background
       const grad = ctx.createRadialGradient(centerX, centerY, CHASM_RADIUS, centerX, centerY, canvas.width);
       grad.addColorStop(0, '#000000');
       grad.addColorStop(0.2, '#1a1a1a');
       grad.addColorStop(1, '#050505');
-      
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw Event Horizon / Distortion Ring
+      // 2. Draw Accretion Debris
+      const debris = debrisRef.current;
+      debris.forEach(p => {
+          // Spiral mechanics
+          p.angle += p.speed * (200 / p.dist); // Faster near center
+          p.dist -= 0.5; // Fall in
+          
+          if (p.dist < CHASM_RADIUS) {
+              p.dist = 400 + Math.random() * 200;
+              p.angle = Math.random() * Math.PI * 2;
+          }
+          
+          const px = centerX + Math.cos(p.angle) * p.dist;
+          const py = centerY + Math.sin(p.angle) * p.dist;
+          
+          // Draw trail-like effect? Just dots for now.
+          const alpha = Math.min(1, (p.dist - CHASM_RADIUS) / 100);
+          
+          ctx.globalAlpha = alpha * 0.6;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(px, py, p.size, 0, Math.PI*2);
+          ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+
+      // 3. Draw Black Hole
       ctx.beginPath();
       ctx.arc(centerX, centerY, CHASM_RADIUS, 0, Math.PI * 2);
       ctx.fillStyle = '#000';
       ctx.fill();
       
-      // Accretion disk glow
+      // Accretion disk rings
       ctx.beginPath();
       ctx.arc(centerX, centerY, CHASM_RADIUS + 5, 0, Math.PI * 2);
       ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
       ctx.stroke();
 
-      // 2. Update Bodies
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, CHASM_RADIUS + 20, 0, Math.PI * 2);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(100, 100, 255, 0.2)';
+      ctx.stroke();
+
+      // 4. Update Bodies (Words)
       const bodies = bodiesRef.current;
 
       bodies.forEach(b => {
-        
         if (b.isDragging) {
              const dx = mouseRef.current.x - b.x;
              const dy = mouseRef.current.y - b.y;
@@ -105,69 +157,51 @@ const ChasmEffect: React.FC = () => {
              const distSq = dx*dx + dy*dy;
              const dist = Math.sqrt(distSq);
              
-             // Gravity Force
-             // Stronger as it gets closer: F = G / r
              const gravityStrength = 800 / (dist + 10); 
-             
-             // Velocity needed for stable orbit: v = sqrt(G/r)
-             // We want them to spiral in, so we give them less than orbital velocity,
-             // or add a "drag" factor.
-             
              const angleToCenter = Math.atan2(dy, dx);
              
-             // Gravity vector (Pull in)
+             // Gravity
              const ax = Math.cos(angleToCenter) * gravityStrength * 0.05;
              const ay = Math.sin(angleToCenter) * gravityStrength * 0.05;
              
              b.vx += ax;
              b.vy += ay;
              
-             // Tangential Force (Spin) - keeps them orbiting
-             // We simulate conservation of angular momentum: speed increases as r decreases
-             // But we add drag to make them eventually fall in.
-             
-             b.vx *= 0.99; // Drag
+             b.vx *= 0.99; 
              b.vy *= 0.99;
              
              b.x += b.vx;
              b.y += b.vy;
              
-             // Align text angle with movement vector (Spaghettification orientation)
-             // Smoothly rotate towards velocity vector
+             // Align text
              const moveAngle = Math.atan2(b.vy, b.vx);
              b.angle += (moveAngle - b.angle) * 0.1;
         }
 
-        // 3. Render
+        // Render
         const dx = centerX - b.x;
         const dy = centerY - b.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
         
-        // Spaghettification Scale
-        // As it gets closer to CHASM_RADIUS, stretch width, shrink height
         let stretch = 1;
         let thinness = 1;
         let alpha = 1;
         
         if (dist < EVENT_HORIZON) {
             const t = Math.max(0, (dist - CHASM_RADIUS) / (EVENT_HORIZON - CHASM_RADIUS));
-            // t goes from 0 (at hole) to 1 (at horizon edge)
-            stretch = 1 + (1-t) * 4; // Stretch up to 5x
-            thinness = 0.2 + t * 0.8; // Thin down to 0.2x
-            alpha = t; // Fade out as it enters
+            stretch = 1 + (1-t) * 4; 
+            thinness = 0.2 + t * 0.8; 
+            alpha = t; 
         }
         
-        // Respawn if inside hole
         if (dist < CHASM_RADIUS) {
             const angle = Math.random() * Math.PI * 2;
             const respawnDist = Math.max(canvas.width, canvas.height) * 0.7;
             b.x = centerX + Math.cos(angle) * respawnDist;
             b.y = centerY + Math.sin(angle) * respawnDist;
-            // Give tangential velocity
             const tangent = angle + Math.PI/2;
             b.vx = Math.cos(tangent) * 4;
             b.vy = Math.sin(tangent) * 4;
-            b.depth = 1;
         } else {
             ctx.save();
             ctx.translate(b.x, b.y);
@@ -175,7 +209,6 @@ const ChasmEffect: React.FC = () => {
             ctx.scale(stretch, thinness);
             
             ctx.fillStyle = b.isDragging ? '#fff' : `rgba(200, 200, 200, ${alpha})`;
-            // Change color shift (Redshift) when close?
             if (dist < EVENT_HORIZON) {
                  ctx.fillStyle = `rgba(255, ${Math.floor(255 * alpha)}, ${Math.floor(255 * alpha)}, ${alpha})`;
             }
@@ -192,7 +225,6 @@ const ChasmEffect: React.FC = () => {
       requestRef.current = requestAnimationFrame(animate);
     };
 
-    // Interaction
     const handleMouseDown = (e: MouseEvent) => {
         mouseRef.current.isDown = true;
         mouseRef.current.x = e.clientX;
@@ -200,7 +232,6 @@ const ChasmEffect: React.FC = () => {
         mouseRef.current.lastX = e.clientX;
         mouseRef.current.lastY = e.clientY;
 
-        // Pick body
         const bodies = bodiesRef.current;
         for (let i = 0; i < bodies.length; i++) {
             const b = bodies[i];
@@ -225,7 +256,6 @@ const ChasmEffect: React.FC = () => {
             const b = bodiesRef.current.find(b => b.id === mouseRef.current.dragId);
             if (b) {
                 b.isDragging = false;
-                // Throwing physics
                 b.vx = (e.clientX - mouseRef.current.lastX) * 0.2;
                 b.vy = (e.clientY - mouseRef.current.lastY) * 0.2;
             }

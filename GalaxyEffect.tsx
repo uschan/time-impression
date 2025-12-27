@@ -26,29 +26,25 @@ const GalaxyEffect: React.FC = () => {
       canvas.height = window.innerHeight;
 
       const stars: GalaxyStar[] = [];
-      const count = 300;
+      const count = 150; // Optimized count
       const words = GALAXY_TEXT.split(' ');
       
       for(let i=0; i<count; i++) {
-        // Spiral Distribution
-        // angle
         const angle = Math.random() * Math.PI * 2;
-        // dist: biased towards center but with a hole
         const r = 50 + Math.pow(Math.random(), 2) * (Math.min(canvas.width, canvas.height)/2 - 50);
         
-        // Color based on distance (Heat map: White -> Gold -> Purple -> Blue)
         const t = r / (Math.min(canvas.width, canvas.height)/2);
         let color = '#fff';
-        if (t < 0.2) color = '#FFFDD0'; // Cream
-        else if (t < 0.4) color = '#FFD700'; // Gold
-        else if (t < 0.7) color = '#BA55D3'; // Orchid
-        else color = '#4169E1'; // Royal Blue
+        if (t < 0.2) color = '#FFFDD0'; 
+        else if (t < 0.4) color = '#FFD700'; 
+        else if (t < 0.7) color = '#BA55D3'; 
+        else color = '#4169E1'; 
 
         stars.push({
           x: 0, y: 0, z: 0,
-          angle: angle + Math.random()*0.5, // Spiral arm offset
+          angle: angle + Math.random()*0.5, 
           radius: r,
-          speed: 0.002 + (1/r) * 0.5, // Kepler-ish: closer is faster
+          speed: 0.002 + (1/r) * 0.5, 
           char: words[i % words.length],
           size: 10 + Math.random() * 8,
           color: color
@@ -58,7 +54,6 @@ const GalaxyEffect: React.FC = () => {
     };
 
     const animate = () => {
-      // Deep space background with trails
       ctx.fillStyle = 'rgba(10, 10, 15, 0.4)'; 
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -66,23 +61,16 @@ const GalaxyEffect: React.FC = () => {
       const cy = canvas.height / 2;
       const stars = starsRef.current;
       
-      // Mouse tilt effect
       const mx = (mouseRef.current.x - cx) * 0.0005;
       const my = (mouseRef.current.y - cy) * 0.0005;
 
-      // Update positions
       stars.forEach(s => {
         s.angle += s.speed;
         
-        // 3D Projection approximation
-        // Rotate around Y axis (based on mouse X)
-        // Rotate around X axis (based on mouse Y)
-        
         const rawX = Math.cos(s.angle) * s.radius;
-        const rawY = Math.sin(s.angle) * s.radius * 0.6; // Flatten disk
+        const rawY = Math.sin(s.angle) * s.radius * 0.6; 
         const rawZ = Math.sin(s.angle) * s.radius * 0.5;
         
-        // Apply tilt
         const tiltedY = rawY * Math.cos(my * 10) - rawZ * Math.sin(my * 10);
         const tiltedZ = rawY * Math.sin(my * 10) + rawZ * Math.cos(my * 10);
         
@@ -94,78 +82,49 @@ const GalaxyEffect: React.FC = () => {
         s.z = finalZ;
       });
 
-      // Sort by depth for correct z-indexing
       stars.sort((a, b) => a.z - b.z);
 
-      // Draw Connections (Constellations)
-      // Only connect nearby stars
+      // Draw Connections (Optimized)
+      // Removed complex gradients inside loop
       ctx.globalCompositeOperation = 'lighter';
       ctx.lineWidth = 0.5;
+      ctx.strokeStyle = 'rgba(150, 200, 255, 0.15)'; // Static color, fast rendering
       
-      // Optimization: Check only a subset or spatial partition?
-      // For N=300, O(N^2) is 90000 checks, doable in JS.
-      
+      ctx.beginPath();
       for(let i=0; i<stars.length; i++) {
         const s1 = stars[i];
-        if (s1.z < 0) continue; // Don't connect background stars too much
+        if (s1.z < 0) continue; 
 
-        let connections = 0;
-        for(let j=i+1; j<stars.length; j++) {
+        // Limit range to avoid N^2
+        for(let j=i+1; j<Math.min(i+10, stars.length); j++) {
             const s2 = stars[j];
-            if (connections > 3) break; // Limit connections per star
-
             const dx = s1.x - s2.x;
             const dy = s1.y - s2.y;
-            const distSq = dx*dx + dy*dy;
-            
-            if (distSq < 3000) { // Connection radius
-                const dist = Math.sqrt(distSq);
-                const alpha = 1 - dist / 55;
-                
-                // Gradient line
-                const grad = ctx.createLinearGradient(s1.x, s1.y, s2.x, s2.y);
-                grad.addColorStop(0, s1.color);
-                grad.addColorStop(1, s2.color);
-                
-                ctx.strokeStyle = grad;
-                ctx.globalAlpha = alpha * 0.4;
-                ctx.beginPath();
+            if (dx*dx + dy*dy < 4000) { 
                 ctx.moveTo(s1.x, s1.y);
                 ctx.lineTo(s2.x, s2.y);
-                ctx.stroke();
-                
-                connections++;
             }
         }
       }
+      ctx.stroke();
 
       // Draw Stars
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       
       stars.forEach(s => {
-        const scale = (s.z + 500) / 500; // Fake perspective scale
+        const scale = (s.z + 500) / 500;
         const alpha = Math.max(0.1, Math.min(1, scale));
         
         if (scale > 0) {
             ctx.font = `${Math.max(8, s.size * scale)}px "Arial", sans-serif`;
             ctx.fillStyle = s.color;
             ctx.globalAlpha = alpha;
-            
-            // Bloom center
-            if (s.radius < 100) {
-                 ctx.shadowColor = s.color;
-                 ctx.shadowBlur = 20;
-            } else {
-                 ctx.shadowBlur = 0;
-            }
-            
             ctx.fillText(s.char, s.x, s.y);
         }
       });
       
       ctx.globalAlpha = 1.0;
-      ctx.shadowBlur = 0;
       ctx.globalCompositeOperation = 'source-over';
 
       requestRef.current = requestAnimationFrame(animate);
