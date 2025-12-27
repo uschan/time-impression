@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import React, { useState, Suspense } from 'react';
+import { Menu, X, Box } from 'lucide-react';
+import { Canvas } from '@react-three/fiber';
 import PendulumEffect from './PendulumEffect';
 import ChristmasTreeEffect from './ChristmasTreeEffect';
 import SyntaxFreedomEffect from './SyntaxFreedomEffect';
@@ -19,13 +20,15 @@ import OrbEffect from './OrbEffect';
 import SignalEffect from './SignalEffect';
 import LensEffect from './LensEffect';
 import KineticEffect from './KineticEffect';
+import TemporalEffect from './TemporalEffect';
 
-type Page = 'pendulum' | 'tree' | 'syntax' | 'entropy' | 'gravity' | 'ripple' | 'spore' | 'chasm' | 'thread' | 'neon' | 'galaxy' | 'eclipse' | 'velocity' | 'bloom' | 'noir' | 'orb' | 'signal' | 'lens' | 'kinetic';
+type Page = 'pendulum' | 'tree' | 'syntax' | 'entropy' | 'gravity' | 'ripple' | 'spore' | 'chasm' | 'thread' | 'neon' | 'galaxy' | 'eclipse' | 'velocity' | 'bloom' | 'noir' | 'orb' | 'signal' | 'lens' | 'kinetic' | 'temporal';
 
-const PAGES: { id: Page; label: string; desc: string }[] = [
+const PAGES: { id: Page; label: string; desc: string; type?: '2d' | '3d' }[] = [
+  { id: 'temporal', label: 'TEMPORAL', desc: 'Sands of time', type: '3d' }, // Reverted to 3D
   { id: 'lens', label: 'LENS', desc: 'Liquid glass' },
   { id: 'kinetic', label: 'KINETIC', desc: 'Typography wave' },
-  { id: 'orb', label: 'ORB', desc: 'Periodic elements' },
+  { id: 'orb', label: 'ORB', desc: 'Periodic elements', type: '3d' }, 
   { id: 'signal', label: 'SIGNAL', desc: 'Digital interference' },
   { id: 'bloom', label: 'BLOOM', desc: 'Floral growth' },
   { id: 'noir', label: 'NOIR', desc: 'Smoky cinema' },
@@ -45,24 +48,27 @@ const PAGES: { id: Page; label: string; desc: string }[] = [
 ];
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<Page>('lens');
+  const [currentPage, setCurrentPage] = useState<Page>('temporal');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Dark mode detection based on current page
-  const isDarkMode = ['neon', 'galaxy', 'chasm', 'eclipse', 'velocity', 'noir', 'orb', 'signal', 'kinetic'].includes(currentPage);
+  const isDarkMode = ['neon', 'galaxy', 'chasm', 'eclipse', 'velocity', 'noir', 'orb', 'signal', 'kinetic', 'temporal'].includes(currentPage);
 
   const handlePageChange = (page: Page) => {
     setCurrentPage(page);
     setIsMenuOpen(false);
   };
 
+  const is3D = PAGES.find(p => p.id === currentPage)?.type === '3d';
+
   return (
     <div className={`relative w-full h-screen overflow-hidden transition-colors duration-1000 ${
-      currentPage === 'neon' || currentPage === 'velocity' || currentPage === 'signal' ? 'bg-[#05050a]' : 
+      currentPage === 'temporal' ? 'bg-[#000]' :
+      (currentPage === 'neon' || currentPage === 'velocity' || currentPage === 'signal' ? 'bg-[#05050a]' : 
       (currentPage === 'galaxy' || currentPage === 'eclipse' || currentPage === 'noir' || currentPage === 'orb' || currentPage === 'kinetic' ? 'bg-[#080808]' : 
       (currentPage === 'chasm' ? 'bg-[#111]' : 
       (currentPage === 'bloom' || currentPage === 'lens' ? 'bg-[#f8f8f8]' : 
-      'bg-[#f5f5f5]')))
+      'bg-[#f5f5f5]'))))
     }`}>
       
       {/* Menu Toggle Button */}
@@ -77,7 +83,7 @@ const App: React.FC = () => {
 
       {/* Full Screen Overlay Menu */}
       <div 
-        className={`fixed inset-0 z-50 bg-black/90 backdrop-blur-xl transition-all duration-500 ease-in-out flex flex-col ${
+        className={`fixed inset-0 z-50 bg-black/95 backdrop-blur-xl transition-all duration-500 ease-in-out flex flex-col ${
           isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       >
@@ -103,7 +109,14 @@ const App: React.FC = () => {
                 }`}
               >
                 <div className="relative z-10 w-full">
-                  <h3 className="text-sm sm:text-lg font-serif font-bold tracking-wider mb-1 truncate w-full">{page.label}</h3>
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="text-sm sm:text-lg font-serif font-bold tracking-wider truncate">{page.label}</h3>
+                    {page.type === '3d' && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
+                        currentPage === page.id ? 'border-black text-black' : 'border-white/30 text-white/50'
+                      }`}>3D</span>
+                    )}
+                  </div>
                   <p className={`text-[10px] sm:text-xs uppercase tracking-widest truncate w-full ${currentPage === page.id ? 'text-gray-500' : 'text-gray-400'}`}>
                     {page.desc}
                   </p>
@@ -124,25 +137,40 @@ const App: React.FC = () => {
 
       {/* Content Area */}
       <div className="w-full h-full">
-        {currentPage === 'pendulum' && <PendulumEffect />}
-        {currentPage === 'tree' && <ChristmasTreeEffect />}
-        {currentPage === 'syntax' && <SyntaxFreedomEffect />}
-        {currentPage === 'entropy' && <EntropyEffect />}
-        {currentPage === 'gravity' && <GravityEffect />}
-        {currentPage === 'ripple' && <RippleEffect />}
-        {currentPage === 'spore' && <SporeEffect />}
-        {currentPage === 'chasm' && <ChasmEffect />}
-        {currentPage === 'thread' && <ThreadEffect />}
-        {currentPage === 'neon' && <NeonEffect />}
-        {currentPage === 'galaxy' && <GalaxyEffect />}
-        {currentPage === 'eclipse' && <EclipseEffect />}
-        {currentPage === 'velocity' && <VelocityEffect />}
-        {currentPage === 'bloom' && <BloomEffect />}
-        {currentPage === 'noir' && <NoirEffect />}
-        {currentPage === 'orb' && <OrbEffect />}
-        {currentPage === 'signal' && <SignalEffect />}
-        {currentPage === 'lens' && <LensEffect />}
-        {currentPage === 'kinetic' && <KineticEffect />}
+        {is3D ? (
+          <Canvas
+            camera={{ position: [0, 0, 30], fov: 35 }}
+            dpr={[1, 2]} // Optimize pixel ratio
+            gl={{ antialias: true, alpha: true }}
+            className="w-full h-full"
+          >
+            <Suspense fallback={null}>
+               {currentPage === 'temporal' && <TemporalEffect />}
+               {currentPage === 'orb' && <OrbEffect />}
+            </Suspense>
+          </Canvas>
+        ) : (
+          <>
+            {currentPage === 'pendulum' && <PendulumEffect />}
+            {currentPage === 'tree' && <ChristmasTreeEffect />}
+            {currentPage === 'syntax' && <SyntaxFreedomEffect />}
+            {currentPage === 'entropy' && <EntropyEffect />}
+            {currentPage === 'gravity' && <GravityEffect />}
+            {currentPage === 'ripple' && <RippleEffect />}
+            {currentPage === 'spore' && <SporeEffect />}
+            {currentPage === 'chasm' && <ChasmEffect />}
+            {currentPage === 'thread' && <ThreadEffect />}
+            {currentPage === 'neon' && <NeonEffect />}
+            {currentPage === 'galaxy' && <GalaxyEffect />}
+            {currentPage === 'eclipse' && <EclipseEffect />}
+            {currentPage === 'velocity' && <VelocityEffect />}
+            {currentPage === 'bloom' && <BloomEffect />}
+            {currentPage === 'noir' && <NoirEffect />}
+            {currentPage === 'signal' && <SignalEffect />}
+            {currentPage === 'lens' && <LensEffect />}
+            {currentPage === 'kinetic' && <KineticEffect />}
+          </>
+        )}
       </div>
 
       {/* Minimal Footer (Hidden when menu open) */}
