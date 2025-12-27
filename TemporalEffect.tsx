@@ -94,7 +94,7 @@ const TemporalEffect: React.FC = () => {
     return pData;
   }, [viewport.width, isMobile]);
 
-  // 2. Animation Loop
+  // 2. Animation Loopp
   useFrame((state) => {
     if (!meshRef.current) return;
 
