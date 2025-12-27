@@ -20,7 +20,7 @@
 
 ## 🚀 部署指南 (VPS Nginx)
 
-目标：将项目部署到 `https://wildsalt.me/subdir/` (例如 `/art` 或 `/time-impression`)。
+目标：将项目部署到 `https://wildsalt.me/time-impression/`。
 
 ### 第一步：构建项目
 
@@ -46,9 +46,9 @@ scp -r dist/* root@<你的VPS_IP>:/var/www/wildsalt.me/time-impression/
 
 或者使用 **FileZilla** 等 FTP 工具手动上传。
 
-### 第三步：配置 Nginx (防止 404/500 错误)
+### 第三步：配置 Nginx (核心修复)
 
-这是最关键的一步。由于是单页应用 (SPA)，我们需要配置 Nginx 正确处理路由和 MIME 类型。
+**出现 MIME type 错误是因为 Nginx 默认不知道 .js 文件是 application/javascript。** 请务必添加 `include /etc/nginx/mime.types;`。
 
 编辑你的 Nginx 配置 (通常在 `/etc/nginx/sites-available/wildsalt.me`):
 
@@ -57,20 +57,27 @@ server {
     listen 80;
     server_name wildsalt.me;
     
-    # 网站根目录
     root /var/www/wildsalt.me; 
     index index.html;
 
-    # === 关键配置开始: 二级目录配置 ===
+    # === 关键配置：确保 MIME 类型正确加载 ===
+    include /etc/nginx/mime.types;
+    
+    # 如果上面的 include 不起作用，可以显式强制指定 JS 类型
+    types {
+        application/javascript js mjs;
+        text/css css;
+        text/html html htm;
+    }
+
+    # === 二级目录配置 ===
     location /time-impression/ {
-        # 使用 alias 指向实际文件夹位置
+        # alias 必须以 / 结尾，这很重要
         alias /var/www/wildsalt.me/time-impression/;
         
         # 尝试寻找文件，如果找不到，回退到 index.html
-        # 这对于 React Router 是必须的 (虽然本项目主要是 Canvas，但加上是个好习惯)
         try_files $uri $uri/ /time-impression/index.html;
     }
-    # === 关键配置结束 ===
 
     # ... 其他配置 ...
 }
@@ -81,6 +88,16 @@ server {
 sudo nginx -t  # 检查配置是否有语法错误
 sudo systemctl reload nginx
 ```
+
+### 🔴 故障排查
+
+**Q: 打开页面卡在 "Loading..."，控制台报错 `Failed to load module script ... MIME type of "application/octet-stream"`**
+
+**A:** 这是 Nginx 配置问题。Nginx 把 `.js` 文件当成了二进制流下载，而不是脚本执行。
+1. 确保 Nginx 配置里有 `include /etc/nginx/mime.types;`。
+2. 检查 `/etc/nginx/mime.types` 文件是否存在，且里面包含 `application/javascript js;`。
+3. 如果还不行，请直接将上面的 `types { application/javascript js mjs; }` 代码块粘贴到 `server` 块中。
+4. **强制刷新浏览器** (Ctrl+F5) 清除缓存。
 
 ---
 
@@ -132,20 +149,3 @@ jobs:
           target: "/var/www/wildsalt.me/time-impression/"
           strip_components: 1 # 去掉 dist 这一层级，直接放内容
 ```
-
----
-
-## ⚡ 性能测试说明
-
-本项目包含大量 Canvas 粒子和物理模拟，在不同设备上性能差异可能很大。
-
-**测试建议：**
-1. **桌面端 Chrome/Edge**: 应该能稳定跑满 60fps/144fps。
-2. **移动端 (iOS Safari)**: 
-   - 注意测试 **"LENS" (液态玻璃)** 效果，这非常消耗 GPU。
-   - 注意测试 **"NEON"** 和 **"GALAXY"**，因为粒子数量较多。
-3. **低电量模式**: 测试手机开启省电模式下的表现（通常会限制 requestAnimationFrame 的帧率）。
-
-**常见问题排查：**
-- **白屏**: 检查 F12 Console。通常是因为 Nginx 配置的路径不对，或者 `index.html` 引用的资源路径不是相对的（本项目已修复此问题）。
-- **卡顿**: 如果 CPU 占用过高，尝试减少代码中常量的粒子数量 (如 `COUNT`, `PARTICLE_COUNT`)。
