@@ -1,5 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 
 // Data structure for particle simulation
@@ -239,23 +240,26 @@ const TemporalEffect: React.FC = () => {
       </instancedMesh>
 
       {/* HTML UI Layer for the Capsule */}
-      <div 
-        style={{
-          position: 'absolute',
-          bottom: '8%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 10,
-          width: '90%',
-          maxWidth: '500px'
-        }}
-      >
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-4 text-center shadow-xl">
-          <p className="text-amber-100/90 font-serif text-sm leading-relaxed tracking-wide">
-            一起经历了那么多，被风吹散过，但我还记得你闪闪发光的样子，忍不住还要悄悄靠近你。
-          </p>
+      <Html fullscreen style={{ pointerEvents: 'none' }}>
+        <div 
+          style={{
+            position: 'absolute',
+            bottom: '8%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 10,
+            width: '90%',
+            maxWidth: '500px',
+            pointerEvents: 'auto'
+          }}
+        >
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-4 text-center shadow-xl">
+            <p className="text-amber-100/90 font-serif text-sm leading-relaxed tracking-wide">
+              一起经历了那么多，被风吹散过，但我还记得你闪闪发光的样子，忍不住还要悄悄靠近你。
+            </p>
+          </div>
         </div>
-      </div>
+      </Html>
     </>
   );
 };
