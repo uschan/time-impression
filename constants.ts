@@ -132,3 +132,39 @@ HISTORY MEMORY FADE
 FRAGMENT ECHO VOID
 SILENCE END RETURN
 `;
+
+export const KINTSUGI_TEXT = `
+  "The world breaks everyone and afterward many are strong at the broken places."
+
+  When a bowl is broken, we do not hide the cracks. 
+  We fill them with gold. 
+  The scar becomes part of the history. 
+  The damage is not an end, but a beginning. 
+  
+  Imperfection is beautiful. 
+  Resilience is golden. 
+  To repair is to transform.
+  
+  What is broken can be whole again, not by erasing the past, but by illuminating the seams.
+  Touch the cracks to heal.
+`;
+
+export const VAPOR_TEXT = `
+  Rain falls like memories on the glass,
+  Blurring the line between now and then.
+  
+  I trace your name in the condensation,
+  Briefly clear, sharp against the grey sky,
+  Before the mist reclaims it.
+  
+  We are but islands in a sea of static.
+  Waiting for a break in the clouds.
+  
+  The city lights smear into bokeh ghosts.
+  Everything ephemeral.
+  Everything drifting.
+  
+  Look closer.
+  The clarity is fleeting,
+  But it was real.
+`;

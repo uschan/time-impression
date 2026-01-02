@@ -1,3 +1,4 @@
+import React from 'react';
 
 export interface Particle {
   char: string;
@@ -343,11 +344,87 @@ export interface FluidCell {
   color: string;
 }
 
+// Kintsugi / Golden Repair
+export interface Shard {
+  path: Point[]; // Polygon vertices
+  center: Point; // Geometric center
+  
+  // Current Transform
+  x: number; 
+  y: number;
+  angle: number;
+  
+  // Target (Healed) Transform
+  targetX: number;
+  targetY: number;
+  targetAngle: number;
+  
+  healed: number; // 0 to 1 (0 = broken, 1 = healed)
+  
+  // Drift velocity when broken
+  vx: number;
+  vy: number;
+  va: number; // Angular velocity
+}
+
+// Vapor / Retro 3D
+export interface VaporParticle {
+  text: string;
+  x: number; // World X
+  y: number; // World Y (height)
+  z: number; // World Z (depth)
+  speed: number;
+  color: string;
+  size: number;
+}
+
+// Rain Drop for Vapor V2
+export interface RainDrop {
+  x: number;
+  y: number;
+  vy: number;
+  size: number;
+  trailLength: number;
+}
+
 // Fix for TypeScript errors regarding R3F intrinsic elements
 declare global {
   namespace JSX {
     interface IntrinsicElements {
+      color: any;
+      ambientLight: any;
+      pointLight: any;
+      instancedMesh: any;
+      boxGeometry: any;
+      meshStandardMaterial: any;
+      points: any;
+      bufferGeometry: any;
+      bufferAttribute: any;
+      pointsMaterial: any;
+      group: any;
+      meshBasicMaterial: any;
+      fog: any;
       [elemName: string]: any;
+    }
+  }
+}
+
+declare module 'react' {
+  namespace JSX {
+    interface IntrinsicElements {
+      color: any;
+      ambientLight: any;
+      pointLight: any;
+      instancedMesh: any;
+      boxGeometry: any;
+      meshStandardMaterial: any;
+      points: any;
+      bufferGeometry: any;
+      bufferAttribute: any;
+      pointsMaterial: any;
+      group: any;
+      meshBasicMaterial: any;
+      fog: any;
     }
   }
 }

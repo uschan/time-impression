@@ -1,8 +1,8 @@
-
 import React, { useMemo, useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Text, Stars, Float } from '@react-three/drei';
 import * as THREE from 'three';
+import './types';
 
 // Create a soft glow texture programmatically to avoid external assets
 const getGlowTexture = () => {

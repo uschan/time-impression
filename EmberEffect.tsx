@@ -111,8 +111,9 @@ const EmberEffect: React.FC = () => {
             const distSq = dx*dx + dy*dy;
             
             // Heat up if mouse is near
-            if (distSq < 10000) { // 100px radius
-                p.heat += 0.05;
+            // Reduced from 10000 (100px) to 400 (20px) for precise burning/drawing
+            if (distSq < 400) { 
+                p.heat += 0.2; // Increase heat rate for quick swipes
                 if (p.heat > 0.8) {
                     p.state = 'BURNING';
                 }
@@ -201,7 +202,24 @@ const EmberEffect: React.FC = () => {
       mouseRef.current = { x: e.clientX, y: e.clientY };
     };
 
+    // Add Touch Support
+    const handleTouchMove = (e: TouchEvent) => {
+        if (e.cancelable) e.preventDefault();
+        if (e.touches.length > 0) {
+            mouseRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+    };
+    
+    const handleTouchStart = (e: TouchEvent) => {
+        if (e.touches.length > 0) {
+            mouseRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+    };
+
     window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchstart', handleTouchStart, { passive: false });
+
     init();
     requestRef.current = requestAnimationFrame(animate);
 
@@ -213,6 +231,8 @@ const EmberEffect: React.FC = () => {
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(requestRef.current);
     };

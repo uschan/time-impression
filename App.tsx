@@ -26,10 +26,14 @@ import WhaleFallEffect from './WhaleFallEffect';
 import ErosionEffect from './ErosionEffect';
 import FluidEffect from './FluidEffect';
 import EmberEffect from './EmberEffect';
+import KintsugiEffect from './KintsugiEffect';
+import VaporEffect from './VaporEffect';
 
-type Page = 'pendulum' | 'tree' | 'syntax' | 'entropy' | 'gravity' | 'ripple' | 'spore' | 'chasm' | 'thread' | 'neon' | 'galaxy' | 'eclipse' | 'velocity' | 'bloom' | 'noir' | 'orb' | 'signal' | 'lens' | 'kinetic' | 'temporal' | 'whalefall' | 'erosion' | 'fluid' | 'ember';
+type Page = 'pendulum' | 'tree' | 'syntax' | 'entropy' | 'gravity' | 'ripple' | 'spore' | 'chasm' | 'thread' | 'neon' | 'galaxy' | 'eclipse' | 'velocity' | 'bloom' | 'noir' | 'orb' | 'signal' | 'lens' | 'kinetic' | 'temporal' | 'whalefall' | 'erosion' | 'fluid' | 'ember' | 'kintsugi' | 'vapor';
 
 const PAGES: { id: Page; label: string; desc: string; type?: '2d' | '3d' }[] = [
+  { id: 'vapor', label: 'VAPOR', desc: 'Retro synthwave' },
+  { id: 'kintsugi', label: 'KINTSUGI', desc: 'Golden repair' },
   { id: 'ember', label: 'EMBER', desc: 'Irreversible loss' },
   { id: 'fluid', label: 'FLUID', desc: 'Magnetic grid flow' },
   { id: 'erosion', label: 'EROSION', desc: 'Structural collapse' },
@@ -57,11 +61,11 @@ const PAGES: { id: Page; label: string; desc: string; type?: '2d' | '3d' }[] = [
 ];
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<Page>('ember');
+  const [currentPage, setCurrentPage] = useState<Page>('vapor');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Dark mode detection based on current page
-  const isDarkMode = ['neon', 'galaxy', 'chasm', 'eclipse', 'velocity', 'noir', 'orb', 'signal', 'kinetic', 'temporal', 'whalefall', 'fluid', 'ember'].includes(currentPage);
+  const isDarkMode = ['neon', 'galaxy', 'chasm', 'eclipse', 'velocity', 'noir', 'orb', 'signal', 'kinetic', 'temporal', 'whalefall', 'fluid', 'ember', 'kintsugi', 'vapor'].includes(currentPage);
 
   const handlePageChange = (page: Page) => {
     setCurrentPage(page);
@@ -74,6 +78,8 @@ const App: React.FC = () => {
     <div className={`relative w-full h-screen overflow-hidden transition-colors duration-1000 ${
       currentPage === 'temporal' ? 'bg-[#000]' :
       (currentPage === 'ember' ? 'bg-[#050100]' :
+      (currentPage === 'vapor' ? 'bg-[#100020]' :
+      (currentPage === 'kintsugi' ? 'bg-[#1a1a1a]' :
       (currentPage === 'whalefall' ? 'bg-[#0a0a0a]' :
       (currentPage === 'fluid' ? 'bg-[#0f172a]' :
       (currentPage === 'neon' || currentPage === 'velocity' || currentPage === 'signal' ? 'bg-[#05050a]' : 
@@ -81,7 +87,7 @@ const App: React.FC = () => {
       (currentPage === 'chasm' ? 'bg-[#111]' : 
       (currentPage === 'bloom' || currentPage === 'lens' ? 'bg-[#f8f8f8]' : 
       (currentPage === 'erosion' ? 'bg-[#e6e4e0]' :
-      'bg-[#f5f5f5]'))))))))
+      'bg-[#f5f5f5]'))))))))))
     }`}>
       
       {/* Menu Toggle Button */}
@@ -163,6 +169,8 @@ const App: React.FC = () => {
           </Canvas>
         ) : (
           <>
+            {currentPage === 'vapor' && <VaporEffect />}
+            {currentPage === 'kintsugi' && <KintsugiEffect />}
             {currentPage === 'ember' && <EmberEffect />}
             {currentPage === 'erosion' && <ErosionEffect />}
             {currentPage === 'fluid' && <FluidEffect />}

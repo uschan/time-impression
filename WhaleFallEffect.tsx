@@ -217,11 +217,6 @@ const WhaleFallEffect: React.FC = () => {
           const p1 = points[con.p1];
           const p2 = points[con.p2];
           
-          // Optimization: Don't stroke every single line if density is huge,
-          // but here density is okay.
-          
-          // Draw tension lines darker/lighter?
-          // Let's only draw.
           ctx.moveTo(p1.x, p1.y);
           ctx.lineTo(p2.x, p2.y);
       }
@@ -240,21 +235,7 @@ const WhaleFallEffect: React.FC = () => {
           // Skip if offscreen significantly
           if (p.x < -20 || p.x > canvas.width + 20 || p.y < -20 || p.y > canvas.height + 20) continue;
 
-          // Calculate "Fold" / Density
-          // Approximation: compare distance to neighbors (we don't have direct neighbor links easily here without loop, 
-          // but we can infer from velocity or just standard rendering)
-          
-          // 3D-ish Shading
-          // If the point moved a lot from its "rest" structure, change brightness?
-          // Simple approach: Use Y position distortion or local stretch.
-          
-          // Let's use simple consistent clean text
           ctx.fillStyle = TEXT_COLOR;
-          
-          // Shadow for stacking depth
-          // If many points are near each other, alpha blending creates darker spots (if we used low alpha).
-          // Since we want readable text, we draw solid.
-          
           ctx.fillText(p.char || '.', p.x, p.y);
       }
       
@@ -293,15 +274,44 @@ const WhaleFallEffect: React.FC = () => {
     
     const handleMouseUp = () => {
         mouseRef.current.isDown = false;
-        // Reset to Interact on mouse up if you want, but toggle button is better.
     };
 
-    // Prevent context menu
+    // --- Touch Support ---
+    const handleTouchStart = (e: TouchEvent) => {
+        if (e.touches.length > 0) {
+            const t = e.touches[0];
+            mouseRef.current.x = t.clientX;
+            mouseRef.current.y = t.clientY;
+            mouseRef.current.lastX = t.clientX;
+            mouseRef.current.lastY = t.clientY;
+            mouseRef.current.isDown = true;
+        }
+    };
+    
+    const handleTouchMove = (e: TouchEvent) => {
+        if (e.cancelable) e.preventDefault();
+        if (e.touches.length > 0) {
+            const t = e.touches[0];
+            mouseRef.current.x = t.clientX;
+            mouseRef.current.y = t.clientY;
+        }
+    };
+    
+    const handleTouchEnd = () => {
+        mouseRef.current.isDown = false;
+    };
+
     const handleContextMenu = (e: MouseEvent) => e.preventDefault();
 
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
+    
+    // Touch Events
+    window.addEventListener('touchstart', handleTouchStart, { passive: false });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
+    
     window.addEventListener('contextmenu', handleContextMenu);
     
     init();
@@ -317,6 +327,11 @@ const WhaleFallEffect: React.FC = () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
+      
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      
       window.removeEventListener('contextmenu', handleContextMenu);
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(requestRef.current);
