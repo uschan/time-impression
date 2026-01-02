@@ -35,7 +35,7 @@ import GalaxyEffect from './features/galaxy';
 import HarmonicEffect from './features/harmonic';
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<PageId>('vapor');
+  const [currentPage, setCurrentPage] = useState<PageId>('pendulum');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const activePageConfig = PAGES.find(p => p.id === currentPage);
