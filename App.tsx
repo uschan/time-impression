@@ -1,3 +1,4 @@
+
 import React, { useState, Suspense } from 'react';
 import { Menu, X, Box } from 'lucide-react';
 import { Canvas } from '@react-three/fiber';
@@ -21,14 +22,20 @@ import SignalEffect from './SignalEffect';
 import LensEffect from './LensEffect';
 import KineticEffect from './KineticEffect';
 import TemporalEffect from './TemporalEffect';
-import HarmonicEffect from './HarmonicEffect';
+import WhaleFallEffect from './WhaleFallEffect';
+import ErosionEffect from './ErosionEffect';
+import FluidEffect from './FluidEffect';
+import EmberEffect from './EmberEffect';
 
-type Page = 'pendulum' | 'tree' | 'syntax' | 'entropy' | 'gravity' | 'ripple' | 'spore' | 'chasm' | 'thread' | 'neon' | 'galaxy' | 'eclipse' | 'velocity' | 'bloom' | 'noir' | 'orb' | 'signal' | 'lens' | 'kinetic' | 'temporal' | 'harmonic';
+type Page = 'pendulum' | 'tree' | 'syntax' | 'entropy' | 'gravity' | 'ripple' | 'spore' | 'chasm' | 'thread' | 'neon' | 'galaxy' | 'eclipse' | 'velocity' | 'bloom' | 'noir' | 'orb' | 'signal' | 'lens' | 'kinetic' | 'temporal' | 'whalefall' | 'erosion' | 'fluid' | 'ember';
 
 const PAGES: { id: Page; label: string; desc: string; type?: '2d' | '3d' }[] = [
+  { id: 'ember', label: 'EMBER', desc: 'Irreversible loss' },
+  { id: 'fluid', label: 'FLUID', desc: 'Magnetic grid flow' },
+  { id: 'erosion', label: 'EROSION', desc: 'Structural collapse' },
+  { id: 'whalefall', label: 'TEXTILE', desc: 'Woven fabric simulation' },
   { id: 'temporal', label: 'TEMPORAL', desc: 'Sands of time', type: '3d' },
-  { id: 'harmonic', label: 'HARMONIC', desc: 'Resonance flow', type: '3d' },
-  { id: 'orb', label: 'ORB', desc: 'Periodic elements' }, // Removed type: 3d, it is a 2D canvas simulation
+  { id: 'orb', label: 'ORB', desc: 'Periodic elements' }, 
   { id: 'lens', label: 'LENS', desc: 'Liquid glass' },
   { id: 'kinetic', label: 'KINETIC', desc: 'Typography wave' },
   { id: 'signal', label: 'SIGNAL', desc: 'Digital interference' },
@@ -50,11 +57,11 @@ const PAGES: { id: Page; label: string; desc: string; type?: '2d' | '3d' }[] = [
 ];
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<Page>('temporal');
+  const [currentPage, setCurrentPage] = useState<Page>('ember');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Dark mode detection based on current page
-  const isDarkMode = ['neon', 'galaxy', 'chasm', 'eclipse', 'velocity', 'noir', 'orb', 'signal', 'kinetic', 'temporal', 'harmonic'].includes(currentPage);
+  const isDarkMode = ['neon', 'galaxy', 'chasm', 'eclipse', 'velocity', 'noir', 'orb', 'signal', 'kinetic', 'temporal', 'whalefall', 'fluid', 'ember'].includes(currentPage);
 
   const handlePageChange = (page: Page) => {
     setCurrentPage(page);
@@ -66,12 +73,15 @@ const App: React.FC = () => {
   return (
     <div className={`relative w-full h-screen overflow-hidden transition-colors duration-1000 ${
       currentPage === 'temporal' ? 'bg-[#000]' :
-      (currentPage === 'harmonic' ? 'bg-[#0a0510]' :
+      (currentPage === 'ember' ? 'bg-[#050100]' :
+      (currentPage === 'whalefall' ? 'bg-[#0a0a0a]' :
+      (currentPage === 'fluid' ? 'bg-[#0f172a]' :
       (currentPage === 'neon' || currentPage === 'velocity' || currentPage === 'signal' ? 'bg-[#05050a]' : 
       (currentPage === 'galaxy' || currentPage === 'eclipse' || currentPage === 'noir' || currentPage === 'orb' || currentPage === 'kinetic' ? 'bg-[#080808]' : 
       (currentPage === 'chasm' ? 'bg-[#111]' : 
       (currentPage === 'bloom' || currentPage === 'lens' ? 'bg-[#f8f8f8]' : 
-      'bg-[#f5f5f5]')))))
+      (currentPage === 'erosion' ? 'bg-[#e6e4e0]' :
+      'bg-[#f5f5f5]'))))))))
     }`}>
       
       {/* Menu Toggle Button */}
@@ -149,11 +159,14 @@ const App: React.FC = () => {
           >
             <Suspense fallback={null}>
                {currentPage === 'temporal' && <TemporalEffect />}
-               {currentPage === 'harmonic' && <HarmonicEffect />}
             </Suspense>
           </Canvas>
         ) : (
           <>
+            {currentPage === 'ember' && <EmberEffect />}
+            {currentPage === 'erosion' && <ErosionEffect />}
+            {currentPage === 'fluid' && <FluidEffect />}
+            {currentPage === 'whalefall' && <WhaleFallEffect />}
             {currentPage === 'orb' && <OrbEffect />}
             {currentPage === 'pendulum' && <PendulumEffect />}
             {currentPage === 'tree' && <ChristmasTreeEffect />}

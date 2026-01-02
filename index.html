@@ -10,22 +10,32 @@
       body {
         margin: 0;
         overflow: hidden;
-        background-color: #000; /* Match Temporal page background */
+        background-color: #000;
         font-family: 'Times New Roman', serif;
       }
       canvas {
         display: block;
       }
+      #root {
+        width: 100vw;
+        height: 100vh;
+      }
+      /* Loading State Styling */
       #root:empty::before {
-        content: 'Loading visual experiments...';
+        content: 'Loading Time Impression...';
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        color: #666;
-        font-size: 14px;
-        letter-spacing: 2px;
+        color: #444;
+        font-size: 12px;
+        letter-spacing: 3px;
         text-transform: uppercase;
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
       }
     </style>
   <script type="importmap">
@@ -38,8 +48,8 @@
     "@react-three/fiber": "https://esm.sh/@react-three/fiber@^9.4.2",
     "vite": "https://esm.sh/vite@^7.3.0",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "three": "https://esm.sh/three@^0.182.0",
-    "@react-three/drei": "https://esm.sh/@react-three/drei@^10.7.7"
+    "@react-three/drei": "https://esm.sh/@react-three/drei@^10.7.7",
+    "three": "https://esm.sh/three@^0.182.0"
   }
 }
 </script>

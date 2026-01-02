@@ -1,3 +1,4 @@
+
 export const TEXT_CONTENT = `
 The nature of time has puzzled philosophers and scientists for millennia. Is it a fundamental property of the universe, a dimension in which events occur in sequence, or is it merely an intellectual concept, a framework that humans use to structure and compare their experiences? 
 
@@ -120,3 +121,14 @@ export const LENS_TEXT = `
 `;
 
 export const KINETIC_TEXT = "FUTURE MOVE NOW FAST SHIFT BOLD TYPE GRID FLOW WAVE PUSH PULL ZONE CORE FLUX";
+
+export const EROSION_TEXT = `
+STRUCTURE ORDER STABILITY
+FOUNDATION CONCRETE STONE
+PERMANENCE ETERNITY SOLID
+GRAVITY DECAY ENTROPY
+COLLAPSE RUIN DUST
+HISTORY MEMORY FADE
+FRAGMENT ECHO VOID
+SILENCE END RETURN
+`;

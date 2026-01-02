@@ -1,3 +1,4 @@
+
 export interface Particle {
   char: string;
   x: number;
@@ -296,4 +297,57 @@ export interface KineticCell {
   stretchX: number;
   stretchY: number;
   weight: number;
+}
+
+// Textile / Cloth
+export interface ClothPoint {
+  x: number;
+  y: number;
+  oldX: number;
+  oldY: number;
+  pinned: boolean;
+  char: string;
+}
+
+export interface ClothConstraint {
+  p1: number;
+  p2: number;
+  length: number;
+}
+
+// Erosion / Collapse
+export interface ErosionBlock {
+  x: number;
+  y: number;
+  originX: number;
+  originY: number;
+  vx: number;
+  vy: number;
+  angle: number;
+  angularVel: number;
+  char: string;
+  isCollapsed: boolean;
+  width: number;
+  height: number;
+  color: string;
+}
+
+// Fluid / Magnetic
+export interface FluidCell {
+  x: number;
+  y: number;
+  originX: number;
+  originY: number;
+  angle: number;
+  scale: number;
+  color: string;
+}
+
+// Fix for TypeScript errors regarding R3F intrinsic elements
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      [elemName: string]: any;
+    }
+  }
 }
