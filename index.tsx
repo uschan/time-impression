@@ -1,6 +1,8 @@
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import App from './src/App';
+import './src/index.css';
 
 // Wait for DOM to be ready
 const mount = () => {

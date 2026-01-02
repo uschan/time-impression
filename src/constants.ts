@@ -1,5 +1,4 @@
 
-
 export const TEXT_CONTENT = `
 The nature of time has puzzled philosophers and scientists for millennia. Is it a fundamental property of the universe, a dimension in which events occur in sequence, or is it merely an intellectual concept, a framework that humans use to structure and compare their experiences? 
 

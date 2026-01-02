@@ -2,7 +2,7 @@
 import React, { useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 
-// UI Components - Explicit relative import
+// UI Components
 import Navigation, { PAGES, PageId } from './components/Navigation';
 
 // Migrated Features
@@ -27,15 +27,13 @@ import SignalEffect from './features/signal';
 import LensEffect from './features/lens';
 import KineticEffect from './features/kinetic';
 import TemporalEffect from './features/temporal';
-import GravityEffect from './features/gravity';
-import ChristmasTreeEffect from './features/christmas';
-import ThreadEffect from './features/thread';
-import KintsugiEffect from './features/kintsugi';
-import GalaxyEffect from './features/galaxy';
 import HarmonicEffect from './features/harmonic';
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<PageId>('vapor');
+  // --- 如何设定第一个效果 (默认页面) ---
+  // 修改 useState 里的字符串即可。
+  // 例如，如果你想让第一个页面是 ORB，就改成: useState<PageId>('orb');
+  const [currentPage, setCurrentPage] = useState<PageId>('pendulum');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const activePageConfig = PAGES.find(p => p.id === currentPage);
@@ -50,7 +48,7 @@ const App: React.FC = () => {
   // Background color mapping
   const getBgColor = (page: PageId) => {
     switch(page) {
-      case 'temporal': return 'bg-[#000]'; // Temporal specific override
+      case 'temporal': return 'bg-[#000]';
       case 'harmonic': return 'bg-[#020205]';
       case 'ember': return 'bg-[#050100]';
       case 'vapor': return 'bg-[#020617]';
@@ -58,18 +56,15 @@ const App: React.FC = () => {
       case 'fluid': return 'bg-[#080808]';
       case 'neon':
       case 'velocity':
-      case 'signal':
-      case 'galaxy': return 'bg-[#05050a]';
+      case 'signal': return 'bg-[#05050a]';
       case 'eclipse':
       case 'noir':
       case 'orb':
-      case 'kinetic':
-      case 'kintsugi': return 'bg-[#080808]';
+      case 'kinetic': return 'bg-[#080808]';
       case 'chasm': return 'bg-[#050505]';
       case 'bloom':
       case 'lens': return 'bg-[#f8f8f8]';
-      case 'erosion':
-      case 'gravity': return 'bg-[#e6e4e0]';
+      case 'erosion': return 'bg-[#e6e4e0]';
       default: return 'bg-[#f5f5f5]';
     }
   };
@@ -122,11 +117,6 @@ const App: React.FC = () => {
             {currentPage === 'signal' && <SignalEffect />}
             {currentPage === 'lens' && <LensEffect />}
             {currentPage === 'kinetic' && <KineticEffect />}
-            {currentPage === 'gravity' && <GravityEffect />}
-            {currentPage === 'christmas' && <ChristmasTreeEffect />}
-            {currentPage === 'thread' && <ThreadEffect />}
-            {currentPage === 'kintsugi' && <KintsugiEffect />}
-            {currentPage === 'galaxy' && <GalaxyEffect />}
           </>
         )}
       </div>
