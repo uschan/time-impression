@@ -2,7 +2,7 @@
 import React from 'react';
 import { Menu, X } from 'lucide-react';
 
-export type PageId = 'pendulum' | 'syntax' | 'entropy' | 'ripple' | 'spore' | 'chasm' | 'neon' | 'eclipse' | 'velocity' | 'bloom' | 'noir' | 'orb' | 'signal' | 'lens' | 'kinetic' | 'temporal' | 'whalefall' | 'erosion' | 'fluid' | 'ember' | 'vapor' | 'harmonic';
+export type PageId = 'pendulum' | 'syntax' | 'entropy' | 'ripple' | 'spore' | 'chasm' | 'neon' | 'eclipse' | 'velocity' | 'bloom' | 'noir' | 'orb' | 'signal' | 'lens' | 'kinetic' | 'temporal' | 'whalefall' | 'erosion' | 'fluid' | 'ember' | 'vapor';
 
 export interface PageConfig {
   id: PageId;

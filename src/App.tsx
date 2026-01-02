@@ -2,7 +2,7 @@
 import React, { useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 
-// UI Components
+// UI Components - Explicit relative import
 import Navigation, { PAGES, PageId } from './components/Navigation';
 
 // Migrated Features
@@ -27,12 +27,8 @@ import SignalEffect from './features/signal';
 import LensEffect from './features/lens';
 import KineticEffect from './features/kinetic';
 import TemporalEffect from './features/temporal';
-import HarmonicEffect from './features/harmonic';
 
 const App: React.FC = () => {
-  // --- 如何设定第一个效果 (默认页面) ---
-  // 修改 useState 里的字符串即可。
-  // 例如，如果你想让第一个页面是 ORB，就改成: useState<PageId>('orb');
   const [currentPage, setCurrentPage] = useState<PageId>('pendulum');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -49,7 +45,6 @@ const App: React.FC = () => {
   const getBgColor = (page: PageId) => {
     switch(page) {
       case 'temporal': return 'bg-[#000]';
-      case 'harmonic': return 'bg-[#020205]';
       case 'ember': return 'bg-[#050100]';
       case 'vapor': return 'bg-[#020617]';
       case 'whalefall': return 'bg-[#0a0a0a]';
@@ -91,7 +86,6 @@ const App: React.FC = () => {
           >
             <Suspense fallback={null}>
                {currentPage === 'temporal' && <TemporalEffect />}
-               {currentPage === 'harmonic' && <HarmonicEffect />}
             </Suspense>
           </Canvas>
         ) : (
